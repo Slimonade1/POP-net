@@ -1,5 +1,6 @@
 HELP.md
 target/
+.env
 /runtime/*
 !/runtime/.gitkeep
 .mvn/wrapper/maven-wrapper.jar

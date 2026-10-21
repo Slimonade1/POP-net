@@ -7,7 +7,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD before starting Compose}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD before starting Compose}
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
