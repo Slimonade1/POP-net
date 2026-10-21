@@ -15,11 +15,11 @@ class TempApplicationTests {
 	private StatusMessageService service;
 
 	@Test
-	void statusMessagesCanBeSavedAndLoadedFromH2() {
-		service.add("H2 is working");
+	void statusMessagesCanBeSavedAndLoadedFromMySql() {
+		service.add("MySQL is working");
 
 		var savedMessage = service.findAll().stream()
-				.filter(message -> message.message().equals("H2 is working"))
+				.filter(message -> message.message().equals("MySQL is working"))
 				.findFirst()
 				.orElseThrow();
 
