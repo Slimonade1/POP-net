@@ -1,3 +1,15 @@
 spring:
   application:
-    name: temp
+    name: pop-net
+  datasource:
+    url: jdbc:h2:file:./runtime/popnet;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:migrations/*.sql
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
