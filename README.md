@@ -44,6 +44,30 @@ Keep `DB_PASSWORD` set in that window while starting the application:
 .\mvnw.cmd spring-boot:run
 ```
 
+### Run from bash, zsh or any Unix shell
+
+One command does it all:
+
+```sh
+./run.sh
+```
+
+It checks for Java 21 and Docker. If either is missing or Docker is not
+running, it asks before installing or starting it with `sudo`. On the first
+run it copies `.env.example` to `.env` with random passwords. Then it starts
+MySQL, waits until the database is healthy, and runs the app on port 8080, or
+the next free port if 8080 is taken. Stop the app with Ctrl+C; MySQL keeps
+running in the background until you run `docker compose down`.
+
+To do the same steps by hand:
+
+```sh
+cp .env.example .env    # then set the two passwords
+set -a; source .env; set +a
+docker compose up -d --wait
+./mvnw spring-boot:run
+```
+
 Open `http://localhost:8080`. Messages can be added and deleted from the home
 page. The MySQL service stores its data in a Docker volume named `mysql-data`.
 To stop the service without deleting its data, run `docker compose down`.
