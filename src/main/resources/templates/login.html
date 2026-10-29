@@ -2,27 +2,29 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Admin login, POP status')}"></head>
 <body>
-<div class="page">
-    <header th:replace="~{fragments/layout :: header}"></header>
+<main class="auth">
+    <img class="brand__logo auth__logo" src="https://raw.githubusercontent.com/netgrp/logo/main/pop-opti-nofont.svg"
+         alt="POP Kollegiet" width="56" height="28">
+    <h1 class="auth__title">Admin login</h1>
+    <p class="auth__lede">For the network group at POP.</p>
 
-    <main>
-        <p class="back"><a class="button button--ghost button--small" th:href="@{/}"><svg
-                th:replace="~{fragments/icons :: icon('arrow-left')}"></svg>Status page</a></p>
-        <h1 class="page-title">Admin login</h1>
-        <p class="lede">For the network group. Log in to post announcements on the status page.</p>
+    <p class="alert status--down" th:if="${param.error}" role="alert"><svg
+            th:replace="~{fragments/icons :: icon('circle-x')}"></svg>Wrong username or password.</p>
+    <p class="alert" th:if="${param.logout}" role="status">You are logged out.</p>
 
-        <form class="compose login" method="post" th:action="@{/login}">
-            <p class="login__alert status--down" th:if="${param.error}" role="alert">Wrong username or password.</p>
-            <p class="login__alert" th:if="${param.logout}" role="status">You are logged out.</p>
-            <label for="username">Username</label>
-            <input id="username" name="username" type="text" autocomplete="username" required autofocus>
-            <label for="password">Password</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" required>
-            <button class="button button--primary" type="submit">Log in</button>
-        </form>
-    </main>
+    <form class="field-stack" method="post" th:action="@{/login}">
+        <label class="field">
+            <span class="field__label">Username</span>
+            <input class="input" name="username" type="text" autocomplete="username" required autofocus>
+        </label>
+        <label class="field">
+            <span class="field__label">Password</span>
+            <input class="input" name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="button button--primary button--block" type="submit">Log in</button>
+    </form>
 
-    <footer th:replace="~{fragments/layout :: footer}"></footer>
-</div>
+    <a class="auth__back" th:href="@{/}"><svg th:replace="~{fragments/icons :: icon('arrow-left')}"></svg>Back to the status page</a>
+</main>
 </body>
 </html>

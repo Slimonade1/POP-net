@@ -23,6 +23,25 @@
             th:replace="~{fragments/icons :: icon('mail')}"></svg>Contact us</a>
 </header>
 
+<header class="admin-header" th:fragment="adminHeader(active)">
+    <div class="admin-header__top">
+        <a class="brand" th:href="@{/admin}">
+            <img class="brand__logo" src="https://raw.githubusercontent.com/netgrp/logo/main/pop-opti-nofont.svg"
+                 alt="POP Kollegiet" width="56" height="28">
+            <span class="brand__name">Admin</span>
+        </a>
+        <form method="post" th:action="@{/logout}">
+            <button class="button button--ghost button--small" type="submit"><svg
+                    th:replace="~{fragments/icons :: icon('log-out')}"></svg>Log out</button>
+        </form>
+    </div>
+    <nav class="admin-nav" aria-label="Admin">
+        <a th:href="@{/admin}" th:attr="aria-current=${active == 'overview' ? 'page' : null}">Overview</a>
+        <a th:href="@{/messages}" th:attr="aria-current=${active == 'announcements' ? 'page' : null}">Announcements</a>
+        <a class="admin-nav__out" th:href="@{/}">Status page<svg th:replace="~{fragments/icons :: icon('arrow-up-right')}"></svg></a>
+    </nav>
+</header>
+
 <div class="ranges" role="group" aria-label="Time range" th:fragment="ranges">
     <button type="button" data-range="day" aria-pressed="false">1 day</button>
     <button type="button" data-range="week" aria-pressed="true">1 week</button>

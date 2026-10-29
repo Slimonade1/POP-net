@@ -3,27 +3,33 @@
 <head th:replace="~{fragments/layout :: head('Announcements, POP status')}"></head>
 <body>
 <div class="page">
-    <header th:replace="~{fragments/layout :: header}"></header>
+    <header th:replace="~{fragments/layout :: adminHeader('announcements')}"></header>
 
-    <main>
-        <h1 class="page-title">Announcements</h1>
+    <main class="admin">
+        <h1 class="admin__title">Announcements</h1>
         <p class="lede">Announcements show at the top of the status page until you delete them.</p>
 
         <form class="compose" method="post" th:action="@{/messages}">
-            <label for="message">New announcement</label>
-            <textarea id="message" name="message" rows="3" maxlength="200" required
-                      placeholder="The Wi-Fi in block C is off on Thursday from 22:00 to 23:00."></textarea>
-            <p class="compose__error" th:if="${error}" th:text="${error}" role="alert"></p>
-            <button class="button button--primary" type="submit">Post announcement</button>
+            <label class="field__label" for="message">New announcement</label>
+            <textarea class="input" id="message" name="message" rows="3" maxlength="200" required
+                      placeholder="Example: Printing in the basement is down until Friday."></textarea>
+            <p class="alert status--down" th:if="${error}" role="alert"><svg
+                    th:replace="~{fragments/icons :: icon('circle-x')}"></svg><span th:text="${error}">Too long.</span></p>
+            <div class="compose__foot">
+                <span class="compose__count" data-count-for="message" aria-live="polite">0 / 200</span>
+                <button class="button button--primary" type="submit">Post announcement</button>
+            </div>
         </form>
 
-        <section aria-labelledby="posted-title">
-            <h2 id="posted-title" class="section-title">Posted</h2>
+        <section class="admin-section" aria-labelledby="posted-title">
+            <h2 id="posted-title" class="section-title">Showing now
+                <span class="count" th:text="${#lists.size(messages)}">1</span></h2>
             <p class="empty" th:if="${#lists.isEmpty(messages)}">Nothing posted. The status page shows no announcements.</p>
             <ul class="posted" th:unless="${#lists.isEmpty(messages)}">
-                <li th:each="message : ${messages}">
-                    <span th:text="${message.message}"></span>
-                    <form method="post" th:action="@{/messages/delete}">
+                <li class="notice" th:each="message : ${messages}">
+                    <svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg>
+                    <span class="posted__text" th:text="${message.message}"></span>
+                    <form method="post" th:action="@{/messages/delete}" data-confirm="Delete this announcement? It disappears from the status page right away.">
                         <input type="hidden" name="id" th:value="${message.id}">
                         <button class="button button--ghost button--small button--danger" type="submit">Delete</button>
                     </form>
@@ -31,8 +37,7 @@
             </ul>
         </section>
     </main>
-
-    <footer th:replace="~{fragments/layout :: footer}"></footer>
 </div>
+<script th:src="@{/js/admin.js}" defer></script>
 </body>
 </html>

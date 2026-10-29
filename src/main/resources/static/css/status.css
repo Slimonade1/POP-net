@@ -685,7 +685,8 @@ a {
     color: var(--quiet);
 }
 
-.page-title + .lede {
+.page-title + .lede,
+.admin__title + .lede {
     margin-top: 0;
 }
 
@@ -695,62 +696,60 @@ a {
     color: var(--quiet);
 }
 
-.compose {
-    max-width: var(--measure);
-    margin-bottom: 3rem;
+.button--block {
+    width: 100%;
+    justify-content: center;
+    padding-block: 0.7rem;
 }
 
-.compose label {
+.field-stack {
+    display: grid;
+    gap: 1rem;
+}
+
+.field {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.field__label {
     display: block;
-    margin-bottom: 0.4rem;
     font-weight: 600;
 }
 
-.compose textarea {
+.input {
     display: block;
     width: 100%;
-    padding: 0.75rem 0.9rem;
-    border: 1px solid var(--quiet);
+    padding: 0.6rem 0.85rem;
+    border: 1px solid var(--divider);
     border-radius: 6px;
-    background: var(--paper);
-    color: inherit;
-    font: inherit;
-    resize: vertical;
-}
-
-.compose__error {
-    margin: 0.5rem 0 0;
-    color: var(--down-text);
-    font-weight: 600;
-}
-
-.compose .button {
-    margin-top: 0.75rem;
-}
-
-.login {
-    max-width: 24rem;
-}
-
-.login input {
-    display: block;
-    width: 100%;
-    margin-bottom: 1rem;
-    padding: 0.6rem 0.9rem;
-    border: 1px solid var(--quiet);
-    border-radius: 6px;
-    background: var(--paper);
+    background: color-mix(in srgb, var(--paper) 40%, white);
     color: inherit;
     font: inherit;
 }
 
-.login .button {
-    margin-top: 0.25rem;
+@media (prefers-color-scheme: dark) {
+    .input {
+        background: var(--wash);
+    }
 }
 
-.login__alert {
+.input:hover {
+    border-color: var(--quiet);
+}
+
+.input:focus-visible {
+    border-color: var(--link);
+    outline: 2px solid var(--link);
+    outline-offset: 0;
+}
+
+.alert {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
     margin: 0 0 1.25rem;
-    padding: 0.6rem 1rem;
+    padding: 0.65rem 1rem;
     border-left: 4px solid var(--status, var(--divider));
     border-radius: 0 6px 6px 0;
     background: var(--wash);
@@ -758,55 +757,198 @@ a {
     font-weight: 600;
 }
 
-.tools {
-    max-width: var(--measure);
-    margin: 0 0 2rem;
-    padding: 0;
-    list-style: none;
-    border-top: 2px solid var(--divider);
+.alert .icon {
+    margin: 0;
+    transform: translateY(0.15em);
 }
 
-.tool {
+.auth {
+    width: min(22rem, 100% - 2.5rem);
+    margin: clamp(3rem, 14vh, 9rem) auto 3rem;
+}
+
+.auth__logo {
+    height: 32px;
+    margin-bottom: 1.5rem;
+}
+
+.auth__title {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+}
+
+.auth__lede {
+    margin: 0.25rem 0 1.75rem;
+    color: var(--quiet);
+}
+
+.auth .button--block {
+    margin-top: 0.5rem;
+}
+
+.auth__back {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 1.75rem;
+    color: var(--quiet);
+    font-size: 0.9375rem;
+    text-decoration: none;
+}
+
+.auth__back:hover {
+    color: var(--ink);
+    text-decoration: underline;
+}
+
+.admin-header {
+    padding-top: 1.5rem;
+    border-bottom: 1px solid var(--rule);
+}
+
+.admin-header__top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+}
+
+.admin-header__top form {
+    margin: 0;
+}
+
+.admin-nav {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1.25rem;
+}
+
+.admin-nav a {
+    padding-block: 0.5rem;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    color: var(--quiet);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.admin-nav a:hover {
+    color: var(--ink);
+}
+
+.admin-nav__out {
+    display: inline-flex;
+    align-items: center;
+    margin-left: auto;
+}
+
+.admin-nav__out .icon {
+    margin: 0 0 0 0.25em;
+}
+
+.admin-nav a[aria-current="page"] {
+    border-bottom-color: var(--ink);
+    color: var(--ink);
+}
+
+.admin {
+    max-width: var(--measure);
+    padding-bottom: 4rem;
+}
+
+.admin__title {
+    margin: 2.25rem 0 0.25rem;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+}
+
+.admin-section__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.admin-section__head .section-title {
+    margin: 0;
+}
+
+.count {
+    display: inline-block;
+    min-width: 1.5em;
+    margin-left: 0.35rem;
+    padding: 0 0.45em;
+    border-radius: 999px;
+    background: var(--wash);
+    color: var(--quiet);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.compose {
+    margin-bottom: 2.75rem;
+}
+
+.compose .field__label {
+    margin-bottom: 0.4rem;
+}
+
+.compose textarea {
+    resize: vertical;
+}
+
+.compose .alert {
+    margin: 0.75rem 0 0;
+}
+
+.compose__foot {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding-block: 0.8rem;
-    border-bottom: 1px solid var(--rule);
+    margin-top: 0.75rem;
 }
 
-.tool p {
-    margin: 0;
+.compose__count {
+    color: var(--quiet);
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
 }
 
-.tool__name {
+.compose__count.is-full {
+    color: var(--down-text);
     font-weight: 600;
 }
 
-.tool__meta {
-    color: var(--quiet);
-    font-size: 0.9375rem;
-}
-
-.logout {
-    margin-bottom: 2rem;
-}
-
 .posted {
-    max-width: var(--measure);
+    display: grid;
+    gap: 0.5rem;
     margin: 0;
     padding: 0;
     list-style: none;
-    border-top: 2px solid var(--divider);
 }
 
-.posted li {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-    padding-block: 0.7rem;
-    border-bottom: 1px solid var(--rule);
+.posted .notice {
+    align-items: center;
+    padding-block: 0.6rem;
+}
+
+.posted .notice .icon {
+    align-self: baseline;
+}
+
+.posted__text {
+    flex: 1;
+    min-width: 0;
 }
 
 .posted form {
@@ -873,5 +1015,9 @@ a {
 
     .chart {
         height: 10rem;
+    }
+
+    .admin-nav {
+        gap: 1.1rem;
     }
 }

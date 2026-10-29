@@ -22,7 +22,7 @@ public class AdminController {
     @GetMapping("/admin")
     public String adminPage(Principal principal, Model model) {
         model.addAttribute("username", principal.getName());
-        model.addAttribute("announcementCount", messages.findAll().size());
+        model.addAttribute("notices", messages.findAll());
         return "admin";
     }
 }
