@@ -41,6 +41,9 @@ public class StatusPages {
     public record Day(String label, List<Entry> entries) {
     }
 
+    public record Problem(String name, String slug, Status status, String since, String summary, String anchor) {
+    }
+
     public void home(Model model) {
         ZonedDateTime now = data.now();
         List<GroupRows> groups = data.groups().stream()
@@ -64,7 +67,14 @@ public class StatusPages {
                 .map(found -> entry(found.service(), found.incident(), now, TIME))
                 .toList();
 
+        List<Problem> details = data.groups().stream()
+                .flatMap(group -> group.services().stream())
+                .flatMap(service -> ExampleData.ongoing(service).stream().map(incident -> problem(service, incident, now)))
+                .sorted(Comparator.comparing(Problem::status).reversed())
+                .toList();
+
         model.addAttribute("groups", groups);
+        model.addAttribute("problems", details);
         model.addAttribute("overall", Status.worst(problems.stream().map(Row::status).toList()));
         model.addAttribute("headline", headline(problems));
         model.addAttribute("checkedAt", TIME.format(now));
@@ -169,15 +179,28 @@ public class StatusPages {
         return byDay.entrySet().stream().map(e -> new Day(e.getKey(), e.getValue())).toList();
     }
 
+    private static Problem problem(ExampleService service, Incident incident, ZonedDateTime now) {
+        long minutes = Math.max(1, Duration.between(incident.start(), now).toMinutes());
+        String length = minutes < 60 ? minutes + " min"
+                : minutes / 60 + " h" + (minutes % 60 == 0 ? "" : " " + minutes % 60 + " min");
+        return new Problem(service.name(), service.slug(), incident.status(),
+                "Since " + TIME.format(incident.start()) + ", " + length, incident.summary(), anchor(service, incident));
+    }
+
     private static String headline(List<Row> problems) {
         if (problems.isEmpty()) {
             return "Everything is working.";
         }
-        boolean allDown = problems.stream().allMatch(row -> row.status() == Status.DOWN);
-        if (problems.size() == 1) {
-            return problems.getFirst().name() + (allDown ? " is down." : " is having problems.");
+        List<String> parts = problems.stream()
+                .map(row -> row.name() + (row.status() == Status.DOWN ? " is down" : " is having problems"))
+                .toList();
+        if (parts.size() == 1) {
+            return parts.getFirst() + ".";
         }
-        return problems.size() + (allDown ? " services are down." : " services are having problems.");
+        if (parts.size() == 2) {
+            return parts.get(0) + " and " + parts.get(1) + ".";
+        }
+        return problems.getFirst().name() + " and " + (problems.size() - 1) + " other services have problems.";
     }
 
     private static String nowText(Status status, Integer latency) {

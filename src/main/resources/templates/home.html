@@ -8,7 +8,19 @@
     <main>
         <section class="answer" th:classappend="${'status--' + overall.css()}" aria-live="polite">
             <h1 class="answer__headline" th:text="${headline}">Everything is working.</h1>
-            <p class="answer__meta">Checked at <time th:text="${checkedAt}">13:00</time>. What is wrong is marked below.</p>
+            <p class="answer__meta">Checked at <time th:text="${checkedAt}">13:00</time>.</p>
+            <ul class="problems" th:unless="${#lists.isEmpty(problems)}">
+                <li class="problem" th:each="problem : ${problems}" th:classappend="${'status--' + problem.status().css()}">
+                    <div class="problem__head">
+                        <a class="button button--ghost button--small" th:href="@{/services/{slug}(slug=${problem.slug()})}"
+                           th:text="${problem.name()}">Reset Password</a>
+                        <span class="problem__status"><svg th:replace="~{fragments/icons :: icon(${problem.status().icon()})}"></svg><th:block
+                                th:text="${problem.status().label()}">Down</th:block></span>
+                        <span class="problem__since" th:text="${problem.since()}">Since 14:25, 12 min</span>
+                    </div>
+                    <p class="problem__summary" th:text="${problem.summary()}">Not answering since the last update.</p>
+                </li>
+            </ul>
         </section>
 
         <section class="notices" th:unless="${#lists.isEmpty(notices)}" aria-labelledby="notices-title">
