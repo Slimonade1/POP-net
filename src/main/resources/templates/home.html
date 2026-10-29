@@ -36,12 +36,13 @@
                         <div class="row__name">
                             <a class="button button--ghost button--small" th:href="@{/services/{slug}(slug=${row.slug()})}"
                                th:text="${row.name()}">POP Print</a>
-                            <span class="row__note" th:if="${row.note() != null}" th:text="${row.note()}">Answering slowly.</span>
                         </div>
                         <div th:replace="~{fragments/layout :: strip(${row})}"></div>
                         <span class="row__uptime" th:attr="data-uptime=${row.uptimes()}" th:text="${row.uptime()}">100 %</span>
                         <span class="row__now"><th:block th:if="${row.status().icon() != null}"><svg th:replace="~{fragments/icons :: icon(${row.status().icon()})}"></svg></th:block><th:block
                                 th:text="${row.status().label()}">Working</th:block></span>
+                        <a class="row__note" th:if="${row.note() != null}" th:href="${'#' + row.noteId()}"
+                           th:title="${row.note()}" th:text="${row.note()}">Answering slowly.</a>
                     </li>
                 </ul>
             </section>
@@ -53,7 +54,7 @@
             <div class="past__group" th:each="day : ${days}">
                 <h3 class="past__day" th:text="${day.label()}">Today</h3>
                 <ol class="incidents">
-                    <li class="incident" th:each="entry : ${day.entries()}"
+                    <li class="incident" th:each="entry : ${day.entries()}" th:id="${entry.id()}"
                         th:classappend="${'status--' + entry.status().css()}"
                         th:attr="data-start=${entry.start()},data-end=${entry.end()}">
                         <p class="incident__when">

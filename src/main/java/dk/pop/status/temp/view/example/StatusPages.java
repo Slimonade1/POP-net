@@ -27,15 +27,15 @@ public class StatusPages {
         this.data = data;
     }
 
-    public record Row(String name, String slug, Status status, String note, List<String> cells, String uptime,
-                      String uptimes, String patterns, String incidents) {
+    public record Row(String name, String slug, Status status, String note, String noteId, List<String> cells,
+                      String uptime, String uptimes, String patterns, String incidents) {
     }
 
     public record GroupRows(String name, List<Row> rows) {
     }
 
-    public record Entry(String when, String start, String end, String service, String slug, Status status,
-                        String length, String summary) {
+    public record Entry(String id, String when, String start, String end, String service, String slug,
+                        Status status, String length, String summary) {
     }
 
     public record Day(String label, List<Entry> entries) {
@@ -136,8 +136,10 @@ public class StatusPages {
             json.put("summary", incident.summary());
             return json;
         }).toList();
+        Optional<Incident> ongoing = ExampleData.ongoing(service);
         return new Row(service.name(), service.slug(), ExampleData.current(service),
-                ExampleData.ongoing(service).map(Incident::summary).orElse(null), cells,
+                ongoing.map(Incident::summary).orElse(null),
+                ongoing.map(incident -> anchor(service, incident)).orElse(null), cells,
                 ExampleData.uptime(service, DEFAULT, now), Json.of(uptimes), Json.of(patterns), Json.of(incidents));
     }
 
@@ -145,9 +147,14 @@ public class StatusPages {
         long minutes = Math.max(1, Duration.between(incident.start(), incident.endOr(now)).toMinutes());
         String length = minutes < 60 ? minutes + " min"
                 : minutes / 60 + " h" + (minutes % 60 == 0 ? "" : " " + minutes % 60 + " min");
-        return new Entry(when.format(incident.start()), iso(incident.start()), iso(incident.endOr(now)),
+        return new Entry(anchor(service, incident), when.format(incident.start()), iso(incident.start()),
+                iso(incident.endOr(now)),
                 service.name(), service.slug(), incident.status(),
                 "for " + length + (incident.ongoing() ? " so far" : ""), incident.summary());
+    }
+
+    private static String anchor(ExampleService service, Incident incident) {
+        return "incident-" + service.slug() + "-" + incident.start().toEpochSecond() / 60;
     }
 
     private static List<Day> days(List<Entry> entries, ZonedDateTime now) {
