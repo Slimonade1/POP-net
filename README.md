@@ -78,6 +78,22 @@ Both are Thymeleaf templates filled from example data in the
 `dk.pop.status.temp.view.example` package, which makes up two weeks of
 incidents per service. Real data replaces that package later.
 
+### Turn the example data on or off
+
+The example data is on by default. To turn it off, put the line
+`EXAMPLE_DATA=false` in `.env` and restart the app. New `.env` files already
+have it, commented out with `#`, so removing the `#` is enough. The pages then
+show no services. Put the `#` back to turn the example data on again.
+
+For a single run without editing `.env`:
+
+```sh
+EXAMPLE_DATA=false ./run.sh
+```
+
+In IntelliJ, add `EXAMPLE_DATA` with the value `false` to the environment
+variables of **TempApplication**, next to `DB_PASSWORD`.
+
 Icons come from [Lucide](https://lucide.dev) (ISC license, see
 `THIRD_PARTY_NOTICES.md`) and live in
 `src/main/resources/templates/fragments/icons.html`. To add one, copy its paths

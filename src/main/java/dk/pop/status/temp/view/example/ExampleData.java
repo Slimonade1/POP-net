@@ -1,5 +1,6 @@
 package dk.pop.status.temp.view.example;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -30,7 +31,11 @@ public class ExampleData {
 
     private final List<ExampleGroup> groups;
 
-    public ExampleData() {
+    public ExampleData(@Value("${example-data:true}") boolean enabled) {
+        if (!enabled) {
+            groups = List.of();
+            return;
+        }
         ZonedDateTime start = ZonedDateTime.now(ZONE).truncatedTo(ChronoUnit.MINUTES);
         groups = List.of(
                 new ExampleGroup("Network infrastructure", List.of(

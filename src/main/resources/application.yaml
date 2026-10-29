@@ -9,3 +9,4 @@ spring:
     init:
       mode: always
       schema-locations: classpath:migrations/*.sql
+example-data: ${EXAMPLE_DATA:true}
