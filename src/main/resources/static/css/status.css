@@ -449,6 +449,11 @@ a {
     color: var(--quiet);
 }
 
+.now + .row__note {
+    margin: -1.5rem 0 2rem;
+    font-size: 1rem;
+}
+
 .now__status {
     color: var(--status-text);
     font-weight: 600;

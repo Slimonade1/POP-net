@@ -28,6 +28,11 @@
     <button type="button" data-range="2weeks" aria-pressed="false">2 weeks</button>
 </div>
 
+<div class="strip" th:fragment="strip(row)" role="img" tabindex="0"
+     aria-label="Status over time, newest on the right. Use the arrow keys to read each slice."
+     th:attr="data-patterns=${row.patterns()},data-incidents=${row.incidents()}"><span class="strip__cell"
+        th:each="cell : ${row.cells()}" th:classappend="${'status--' + cell}"></span></div>
+
 <footer class="site-footer" th:fragment="footer">
     <p>Something broken that is not listed here? Tell the network group.</p>
     <div class="site-footer__actions">

@@ -171,7 +171,7 @@
 
     function niceCeiling(value) {
         const magnitude = 10 ** Math.floor(Math.log10(Math.max(value, 1)));
-        return [1, 2, 5, 10].map((factor) => factor * magnitude).find((step) => step >= value * 1.1);
+        return [1, 2, 5, 10, 20].map((factor) => factor * magnitude).find((step) => step >= value * 1.1);
     }
 
     function drawChart(chart) {

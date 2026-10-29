@@ -6,9 +6,9 @@
     <header th:replace="~{fragments/layout :: header}"></header>
 
     <main>
-        <section class="answer status--sick" aria-live="polite">
-            <h1 class="answer__headline">POP Print is having problems.</h1>
-            <p class="answer__meta">Checked at <time>13:00</time>. What is wrong is marked below.</p>
+        <section class="answer" th:classappend="${'status--' + overall.css()}" aria-live="polite">
+            <h1 class="answer__headline" th:text="${headline}">Everything is working.</h1>
+            <p class="answer__meta">Checked at <time th:text="${checkedAt}">13:00</time>. What is wrong is marked below.</p>
         </section>
 
         <section class="notices" th:unless="${#lists.isEmpty(notices)}" aria-labelledby="notices-title">
@@ -18,168 +18,30 @@
 
         <section class="history" aria-labelledby="history-title">
             <div class="history__head">
-                <h2 id="history-title" class="history__title">The <span data-period>past week</span></h2>
+                <h2 id="history-title" class="history__title">The <span data-period th:text="${period}">past week</span></h2>
                 <div th:replace="~{fragments/layout :: ranges}"></div>
             </div>
 
-            <section class="group" aria-labelledby="group-0">
+            <section class="group" th:each="group, groupStat : ${groups}" th:attr="aria-labelledby=${'group-' + groupStat.index}">
                 <div class="row row--head">
-                    <h3 class="row__name group__name" id="group-0">Network infrastructure</h3>
-                    <div class="row__axis" aria-hidden="true"><span data-axis-start>Thu 22 Oct</span><span>Now</span></div>
-                    <span class="row__uptime" aria-hidden="true">Uptime</span>
-                    <span class="row__now" aria-hidden="true">Status</span>
+                    <h3 class="row__name group__name" th:id="${'group-' + groupStat.index}" th:text="${group.name()}">Web services</h3>
+                    <th:block th:if="${groupStat.first}">
+                        <div class="row__axis" aria-hidden="true"><span data-axis-start th:text="${axisStart}">Thu 22 Oct</span><span>Now</span></div>
+                        <span class="row__uptime" aria-hidden="true">Uptime</span>
+                        <span class="row__now" aria-hidden="true">Status</span>
+                    </th:block>
                 </div>
                 <ul class="rows">
-                    <li class="row status--operational">
+                    <li class="row" th:each="row : ${group.rows()}" th:classappend="${'status--' + row.status().css()}">
                         <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">Backup</a>
+                            <a class="button button--ghost button--small" th:href="@{/services/{slug}(slug=${row.slug()})}"
+                               th:text="${row.name()}">POP Print</a>
+                            <span class="row__note" th:if="${row.note() != null}" th:text="${row.note()}">Answering slowly.</span>
                         </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;oooooooooooooooooooooooo&quot;,&quot;week&quot;:&quot;oooooooooooooooooooooooooooooooooooooooooo&quot;,&quot;2weeks&quot;:&quot;sooooooooooooooooooooooooooooooooooooooooo&quot;}" data-incidents="[{&quot;start&quot;:&quot;2026-10-15T17:18+02:00&quot;,&quot;end&quot;:&quot;2026-10-15T19:32+02:00&quot;,&quot;status&quot;:&quot;s&quot;,&quot;summary&quot;:&quot;One of the servers stopped answering, the others took over.&quot;}]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;100 %&quot;,&quot;2weeks&quot;:&quot;100 %&quot;}">100 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">Internal DHCP</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;oooooooooooooooooooooooo&quot;,&quot;week&quot;:&quot;oooooooodooooooooooooooooooooooooooooooooo&quot;,&quot;2weeks&quot;:&quot;ooooooooooooooooooooooooodoooooooooooooooo&quot;}" data-incidents="[{&quot;start&quot;:&quot;2026-10-24T03:18+02:00&quot;,&quot;end&quot;:&quot;2026-10-24T03:55+02:00&quot;,&quot;status&quot;:&quot;d&quot;,&quot;summary&quot;:&quot;Not answering during planned maintenance.&quot;}]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--down"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;99.63 %&quot;,&quot;2weeks&quot;:&quot;99.81 %&quot;}">99.63 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">K-Net RADIUS</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;ooooooooooooooooooooooos&quot;,&quot;week&quot;:&quot;ooooooooodoooooooooooosoooooooooooooooooos&quot;,&quot;2weeks&quot;:&quot;ooooooooooooooooooooooooodoooooosoooooooos&quot;}" data-incidents="[{&quot;start&quot;:&quot;2026-10-24T05:20+02:00&quot;,&quot;end&quot;:&quot;2026-10-24T05:44+02:00&quot;,&quot;status&quot;:&quot;d&quot;,&quot;summary&quot;:&quot;Not answering. Fixed by restarting the service.&quot;},{&quot;start&quot;:&quot;2026-10-26T09:29+01:00&quot;,&quot;end&quot;:&quot;2026-10-26T09:54+01:00&quot;,&quot;status&quot;:&quot;s&quot;,&quot;summary&quot;:&quot;Slow while a backup was running.&quot;},{&quot;start&quot;:&quot;2026-10-29T12:31+01:00&quot;,&quot;end&quot;:&quot;2026-10-29T12:39+01:00&quot;,&quot;status&quot;:&quot;s&quot;,&quot;summary&quot;:&quot;One of the servers stopped answering, the others took over.&quot;}]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--down"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--sick"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--sick"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;99.76 %&quot;,&quot;2weeks&quot;:&quot;99.88 %&quot;}">99.76 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">Network Monitor Status</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;oooooooooooooooooooooooo&quot;,&quot;week&quot;:&quot;oooooooooooooooooooooooooooooooooooooooooo&quot;,&quot;2weeks&quot;:&quot;ooooooosoooooooooooooooooooooooooooooooooo&quot;}" data-incidents="[{&quot;start&quot;:&quot;2026-10-18T03:37+02:00&quot;,&quot;end&quot;:&quot;2026-10-18T04:32+02:00&quot;,&quot;status&quot;:&quot;s&quot;,&quot;summary&quot;:&quot;Slow while a backup was running.&quot;}]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;100 %&quot;,&quot;2weeks&quot;:&quot;100 %&quot;}">100 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">Internal RADIUS</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;ooooooooooooooddoooooooo&quot;,&quot;week&quot;:&quot;ooooooooooooooooooooooooooooooooooooooddoo&quot;,&quot;2weeks&quot;:&quot;oooooooooooooooooooooooooooooooooooooooodo&quot;}" data-incidents="[{&quot;start&quot;:&quot;2026-10-29T03:40+01:00&quot;,&quot;end&quot;:&quot;2026-10-29T04:04+01:00&quot;,&quot;status&quot;:&quot;d&quot;,&quot;summary&quot;:&quot;Not answering. Fixed by restarting the service.&quot;}]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--down"></span><span class="strip__cell status--down"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;98.33 %&quot;,&quot;week&quot;:&quot;99.76 %&quot;,&quot;2weeks&quot;:&quot;99.88 %&quot;}">99.76 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">Locking System Server</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;oooooooooooooooooooooooo&quot;,&quot;week&quot;:&quot;oooooooooooooooooooooooooodooooooooooooooo&quot;,&quot;2weeks&quot;:&quot;oooooooooooooooooooooooooooooooooodooooooo&quot;}" data-incidents="[{&quot;start&quot;:&quot;2026-10-27T00:31+01:00&quot;,&quot;end&quot;:&quot;2026-10-27T00:48+01:00&quot;,&quot;status&quot;:&quot;d&quot;,&quot;summary&quot;:&quot;Not answering. Fixed by restarting the service.&quot;}]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--down"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;99.83 %&quot;,&quot;2weeks&quot;:&quot;99.91 %&quot;}">99.83 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">Management VPN</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;oooooooooooooooooooooooo&quot;,&quot;week&quot;:&quot;oooooooooooooooooooooooooooooossoooooooooo&quot;,&quot;2weeks&quot;:&quot;oooooooooooooooooooooooooooooooooooosooooo&quot;}" data-incidents="[{&quot;start&quot;:&quot;2026-10-27T18:35+01:00&quot;,&quot;end&quot;:&quot;2026-10-27T20:13+01:00&quot;,&quot;status&quot;:&quot;s&quot;,&quot;summary&quot;:&quot;One of the servers stopped answering, the others took over.&quot;}]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--sick"></span><span class="strip__cell status--sick"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;100 %&quot;,&quot;2weeks&quot;:&quot;100 %&quot;}">100 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                </ul>
-            </section>
-            <section class="group" aria-labelledby="group-1">
-                <div class="row row--head">
-                    <h3 class="row__name group__name" id="group-1">Servers</h3>
-                </div>
-                <ul class="rows">
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">Jane</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;oooooooooooooooooooooooo&quot;,&quot;week&quot;:&quot;oooooooosooooooooooooooooooooooooooooooooo&quot;,&quot;2weeks&quot;:&quot;ooooooooooooooooooooooooosoooooooooooooooo&quot;}" data-incidents="[{&quot;start&quot;:&quot;2026-10-24T00:20+02:00&quot;,&quot;end&quot;:&quot;2026-10-24T01:50+02:00&quot;,&quot;status&quot;:&quot;s&quot;,&quot;summary&quot;:&quot;One of the servers stopped answering, the others took over.&quot;}]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--sick"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;100 %&quot;,&quot;2weeks&quot;:&quot;100 %&quot;}">100 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">John</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;oooooooooooooooooooooooo&quot;,&quot;week&quot;:&quot;oooooooooooooooooooooooooooooooooooooooooo&quot;,&quot;2weeks&quot;:&quot;oooooooooooooooooooooooooooooooooooooooooo&quot;}" data-incidents="[]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;100 %&quot;,&quot;2weeks&quot;:&quot;100 %&quot;}">100 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                </ul>
-            </section>
-            <section class="group" aria-labelledby="group-2">
-                <div class="row row--head">
-                    <h3 class="row__name group__name" id="group-2">Web services</h3>
-                </div>
-                <ul class="rows">
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">POP Booking</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;oooooooooooooooooooooooo&quot;,&quot;week&quot;:&quot;ooooooooooooooooooooooosoooooooooooooooooo&quot;,&quot;2weeks&quot;:&quot;sooooooooooooooooooooooooooooooosooooooooo&quot;}" data-incidents="[{&quot;start&quot;:&quot;2026-10-15T21:57+02:00&quot;,&quot;end&quot;:&quot;2026-10-15T22:33+02:00&quot;,&quot;status&quot;:&quot;s&quot;,&quot;summary&quot;:&quot;Slow while a backup was running.&quot;},{&quot;start&quot;:&quot;2026-10-26T12:36+01:00&quot;,&quot;end&quot;:&quot;2026-10-26T14:02+01:00&quot;,&quot;status&quot;:&quot;s&quot;,&quot;summary&quot;:&quot;One of the servers stopped answering, the others took over.&quot;}]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--sick"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;100 %&quot;,&quot;2weeks&quot;:&quot;100 %&quot;}">100 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">POP Website</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;ooooossooooooooooooooooo&quot;,&quot;week&quot;:&quot;oooooooooooooooooooooooooooooooooooosooooo&quot;,&quot;2weeks&quot;:&quot;oooooooooooooooossooooooooooooooooooooosoo&quot;}" data-incidents="[{&quot;start&quot;:&quot;2026-10-21T06:49+02:00&quot;,&quot;end&quot;:&quot;2026-10-21T09:15+02:00&quot;,&quot;status&quot;:&quot;s&quot;,&quot;summary&quot;:&quot;One of the servers stopped answering, the others took over.&quot;},{&quot;start&quot;:&quot;2026-10-28T18:10+01:00&quot;,&quot;end&quot;:&quot;2026-10-28T19:15+01:00&quot;,&quot;status&quot;:&quot;s&quot;,&quot;summary&quot;:&quot;Slow while a backup was running.&quot;}]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--sick"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;100 %&quot;,&quot;2weeks&quot;:&quot;100 %&quot;}">100 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">Network Monitor Service</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;oooooooooooooooooooooooo&quot;,&quot;week&quot;:&quot;oooooooooooooooooooooooooooooooooooooooooo&quot;,&quot;2weeks&quot;:&quot;oooooooooooooooooooooooooooooooooooooooooo&quot;}" data-incidents="[]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;100 %&quot;,&quot;2weeks&quot;:&quot;100 %&quot;}">100 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                    <li class="row status--sick">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">POP Print</a>
-                            <span class="row__note">Answering slowly. We are looking at the print server.</span>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;ooooooooooooooooooooooos&quot;,&quot;week&quot;:&quot;ooooooooooooooodooooooooooooooooooooooooos&quot;,&quot;2weeks&quot;:&quot;oooooooooooooooooooooooooooodoooooooooooos&quot;}" data-incidents="[{&quot;start&quot;:&quot;2026-10-25T05:48+01:00&quot;,&quot;end&quot;:&quot;2026-10-25T06:06+01:00&quot;,&quot;status&quot;:&quot;d&quot;,&quot;summary&quot;:&quot;Not answering after a power cut in the server room.&quot;},{&quot;start&quot;:&quot;2026-10-29T12:22+01:00&quot;,&quot;end&quot;:null,&quot;status&quot;:&quot;s&quot;,&quot;summary&quot;:&quot;Answering slowly. We are looking at the print server.&quot;}]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--down"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--sick"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;99.82 %&quot;,&quot;2weeks&quot;:&quot;99.91 %&quot;}">99.82 %</span>
-                        <span class="row__now"><svg th:replace="~{fragments/icons :: icon('triangle-alert')}"></svg>Having problems</span>
-                    </li>
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">Self-service Redirection</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;oooooooooooooooooooooooo&quot;,&quot;week&quot;:&quot;oooooooooooooooooooosooooooooooooooooooooo&quot;,&quot;2weeks&quot;:&quot;ooooooooooooooooooooooooooooooosoooooooooo&quot;}" data-incidents="[{&quot;start&quot;:&quot;2026-10-26T00:04+01:00&quot;,&quot;end&quot;:&quot;2026-10-26T01:33+01:00&quot;,&quot;status&quot;:&quot;s&quot;,&quot;summary&quot;:&quot;One of the servers stopped answering, the others took over.&quot;}]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--sick"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;100 %&quot;,&quot;2weeks&quot;:&quot;100 %&quot;}">100 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">Reset Password</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;oooooooooooooooooooooooo&quot;,&quot;week&quot;:&quot;oooooooooooooooooooooooooooooooooooooooooo&quot;,&quot;2weeks&quot;:&quot;oooooooooooooooooooooooooooooooooooooooooo&quot;}" data-incidents="[]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;100 %&quot;,&quot;2weeks&quot;:&quot;100 %&quot;}">100 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">Netgrp Password Manager</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;oooooooooooooooooooooooo&quot;,&quot;week&quot;:&quot;oooooooooooooooooooooooooooooooooooooooooo&quot;,&quot;2weeks&quot;:&quot;oooooooooooooooooooooooooooooooooooooooooo&quot;}" data-incidents="[]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;100 %&quot;,&quot;2weeks&quot;:&quot;100 %&quot;}">100 %</span>
-                        <span class="row__now">Working</span>
-                    </li>
-                    <li class="row status--operational">
-                        <div class="row__name">
-                            <a class="button button--ghost button--small" th:href="@{/service}">Netgrp Wiki</a>
-                        </div>
-                        <div class="strip" role="img" tabindex="0" aria-label="Status over time, newest on the right. Use the arrow keys to read each slice." data-patterns="{&quot;day&quot;:&quot;oooooooooooooooooooooooo&quot;,&quot;week&quot;:&quot;oooooooooooooooooooooooooooooooooodooooooo&quot;,&quot;2weeks&quot;:&quot;oooooooooooosooooooooooooooooooooooooodooo&quot;}" data-incidents="[{&quot;start&quot;:&quot;2026-10-19T21:57+02:00&quot;,&quot;end&quot;:&quot;2026-10-19T23:53+02:00&quot;,&quot;status&quot;:&quot;s&quot;,&quot;summary&quot;:&quot;One of the servers stopped answering, the others took over.&quot;},{&quot;start&quot;:&quot;2026-10-28T10:43+01:00&quot;,&quot;end&quot;:&quot;2026-10-28T10:51+01:00&quot;,&quot;status&quot;:&quot;d&quot;,&quot;summary&quot;:&quot;Not answering during planned maintenance.&quot;}]"><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--down"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span><span class="strip__cell status--operational"></span></div>
-                        <span class="row__uptime" data-uptime="{&quot;day&quot;:&quot;100 %&quot;,&quot;week&quot;:&quot;99.92 %&quot;,&quot;2weeks&quot;:&quot;99.96 %&quot;}">99.92 %</span>
-                        <span class="row__now">Working</span>
+                        <div th:replace="~{fragments/layout :: strip(${row})}"></div>
+                        <span class="row__uptime" th:attr="data-uptime=${row.uptimes()}" th:text="${row.uptime()}">100 %</span>
+                        <span class="row__now"><th:block th:if="${row.status().icon() != null}"><svg th:replace="~{fragments/icons :: icon(${row.status().icon()})}"></svg></th:block><th:block
+                                th:text="${row.status().label()}">Working</th:block></span>
                     </li>
                 </ul>
             </section>
@@ -187,215 +49,30 @@
 
         <section class="past" aria-labelledby="past-title">
             <h2 id="past-title" class="history__title">Past incidents</h2>
-            <p class="empty" data-incidents-empty hidden>No incidents in the <span data-period>past week</span>.</p>
-            <div class="past__group">
-            <h3 class="past__day">Today</h3>
-            <ol class="incidents">
-                <li class="incident status--sick" data-start="2026-10-29T12:31+01:00" data-end="2026-10-29T12:39+01:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-29T12:31+01:00">12:31</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">K-Net RADIUS</a>
-                        <span class="incident__what"><strong>Having problems</strong> <span>for 8 min</span></span>
-                    </p>
-                    <p class="incident__summary">One of the servers stopped answering, the others took over.</p>
-                </li>
-                <li class="incident status--sick" data-start="2026-10-29T12:22+01:00" data-end="2026-10-29T13:00+01:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-29T12:22+01:00">12:22</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">POP Print</a>
-                        <span class="incident__what"><strong>Having problems</strong> <span>for 38 min so far</span></span>
-                    </p>
-                    <p class="incident__summary">Answering slowly. We are looking at the print server.</p>
-                </li>
-                <li class="incident status--down" data-start="2026-10-29T03:40+01:00" data-end="2026-10-29T04:04+01:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-29T03:40+01:00">03:40</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">Internal RADIUS</a>
-                        <span class="incident__what"><strong>Down</strong> <span>for 24 min</span></span>
-                    </p>
-                    <p class="incident__summary">Not answering. Fixed by restarting the service.</p>
-                </li>
-            </ol>
-            </div>
-            <div class="past__group">
-            <h3 class="past__day">Yesterday</h3>
-            <ol class="incidents">
-                <li class="incident status--sick" data-start="2026-10-28T18:10+01:00" data-end="2026-10-28T19:15+01:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-28T18:10+01:00">18:10</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">POP Website</a>
-                        <span class="incident__what"><strong>Having problems</strong> <span>for 1 h 5 min</span></span>
-                    </p>
-                    <p class="incident__summary">Slow while a backup was running.</p>
-                </li>
-                <li class="incident status--down" data-start="2026-10-28T10:43+01:00" data-end="2026-10-28T10:51+01:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-28T10:43+01:00">10:43</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">Netgrp Wiki</a>
-                        <span class="incident__what"><strong>Down</strong> <span>for 8 min</span></span>
-                    </p>
-                    <p class="incident__summary">Not answering during planned maintenance.</p>
-                </li>
-            </ol>
-            </div>
-            <div class="past__group">
-            <h3 class="past__day">Tuesday 27 October</h3>
-            <ol class="incidents">
-                <li class="incident status--sick" data-start="2026-10-27T18:35+01:00" data-end="2026-10-27T20:13+01:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-27T18:35+01:00">18:35</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">Management VPN</a>
-                        <span class="incident__what"><strong>Having problems</strong> <span>for 1 h 38 min</span></span>
-                    </p>
-                    <p class="incident__summary">One of the servers stopped answering, the others took over.</p>
-                </li>
-                <li class="incident status--down" data-start="2026-10-27T00:31+01:00" data-end="2026-10-27T00:48+01:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-27T00:31+01:00">00:31</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">Locking System Server</a>
-                        <span class="incident__what"><strong>Down</strong> <span>for 17 min</span></span>
-                    </p>
-                    <p class="incident__summary">Not answering. Fixed by restarting the service.</p>
-                </li>
-            </ol>
-            </div>
-            <div class="past__group">
-            <h3 class="past__day">Monday 26 October</h3>
-            <ol class="incidents">
-                <li class="incident status--sick" data-start="2026-10-26T12:36+01:00" data-end="2026-10-26T14:02+01:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-26T12:36+01:00">12:36</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">POP Booking</a>
-                        <span class="incident__what"><strong>Having problems</strong> <span>for 1 h 26 min</span></span>
-                    </p>
-                    <p class="incident__summary">One of the servers stopped answering, the others took over.</p>
-                </li>
-                <li class="incident status--sick" data-start="2026-10-26T09:29+01:00" data-end="2026-10-26T09:54+01:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-26T09:29+01:00">09:29</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">K-Net RADIUS</a>
-                        <span class="incident__what"><strong>Having problems</strong> <span>for 25 min</span></span>
-                    </p>
-                    <p class="incident__summary">Slow while a backup was running.</p>
-                </li>
-                <li class="incident status--sick" data-start="2026-10-26T00:04+01:00" data-end="2026-10-26T01:33+01:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-26T00:04+01:00">00:04</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">Self-service Redirection</a>
-                        <span class="incident__what"><strong>Having problems</strong> <span>for 1 h 29 min</span></span>
-                    </p>
-                    <p class="incident__summary">One of the servers stopped answering, the others took over.</p>
-                </li>
-            </ol>
-            </div>
-            <div class="past__group">
-            <h3 class="past__day">Sunday 25 October</h3>
-            <ol class="incidents">
-                <li class="incident status--down" data-start="2026-10-25T05:48+01:00" data-end="2026-10-25T06:06+01:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-25T05:48+01:00">05:48</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">POP Print</a>
-                        <span class="incident__what"><strong>Down</strong> <span>for 18 min</span></span>
-                    </p>
-                    <p class="incident__summary">Not answering after a power cut in the server room.</p>
-                </li>
-            </ol>
-            </div>
-            <div class="past__group">
-            <h3 class="past__day">Saturday 24 October</h3>
-            <ol class="incidents">
-                <li class="incident status--down" data-start="2026-10-24T05:20+02:00" data-end="2026-10-24T05:44+02:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-24T05:20+02:00">05:20</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">K-Net RADIUS</a>
-                        <span class="incident__what"><strong>Down</strong> <span>for 24 min</span></span>
-                    </p>
-                    <p class="incident__summary">Not answering. Fixed by restarting the service.</p>
-                </li>
-                <li class="incident status--down" data-start="2026-10-24T03:18+02:00" data-end="2026-10-24T03:55+02:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-24T03:18+02:00">03:18</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">Internal DHCP</a>
-                        <span class="incident__what"><strong>Down</strong> <span>for 37 min</span></span>
-                    </p>
-                    <p class="incident__summary">Not answering during planned maintenance.</p>
-                </li>
-                <li class="incident status--sick" data-start="2026-10-24T00:20+02:00" data-end="2026-10-24T01:50+02:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-24T00:20+02:00">00:20</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">Jane</a>
-                        <span class="incident__what"><strong>Having problems</strong> <span>for 1 h 30 min</span></span>
-                    </p>
-                    <p class="incident__summary">One of the servers stopped answering, the others took over.</p>
-                </li>
-            </ol>
-            </div>
-            <div class="past__group">
-            <h3 class="past__day">Wednesday 21 October</h3>
-            <ol class="incidents">
-                <li class="incident status--sick" data-start="2026-10-21T06:49+02:00" data-end="2026-10-21T09:15+02:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-21T06:49+02:00">06:49</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">POP Website</a>
-                        <span class="incident__what"><strong>Having problems</strong> <span>for 2 h 26 min</span></span>
-                    </p>
-                    <p class="incident__summary">One of the servers stopped answering, the others took over.</p>
-                </li>
-            </ol>
-            </div>
-            <div class="past__group">
-            <h3 class="past__day">Monday 19 October</h3>
-            <ol class="incidents">
-                <li class="incident status--sick" data-start="2026-10-19T21:57+02:00" data-end="2026-10-19T23:53+02:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-19T21:57+02:00">21:57</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">Netgrp Wiki</a>
-                        <span class="incident__what"><strong>Having problems</strong> <span>for 1 h 56 min</span></span>
-                    </p>
-                    <p class="incident__summary">One of the servers stopped answering, the others took over.</p>
-                </li>
-            </ol>
-            </div>
-            <div class="past__group">
-            <h3 class="past__day">Sunday 18 October</h3>
-            <ol class="incidents">
-                <li class="incident status--sick" data-start="2026-10-18T03:37+02:00" data-end="2026-10-18T04:32+02:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-18T03:37+02:00">03:37</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">Network Monitor Status</a>
-                        <span class="incident__what"><strong>Having problems</strong> <span>for 55 min</span></span>
-                    </p>
-                    <p class="incident__summary">Slow while a backup was running.</p>
-                </li>
-            </ol>
-            </div>
-            <div class="past__group">
-            <h3 class="past__day">Thursday 15 October</h3>
-            <ol class="incidents">
-                <li class="incident status--sick" data-start="2026-10-15T21:57+02:00" data-end="2026-10-15T22:33+02:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-15T21:57+02:00">21:57</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">POP Booking</a>
-                        <span class="incident__what"><strong>Having problems</strong> <span>for 36 min</span></span>
-                    </p>
-                    <p class="incident__summary">Slow while a backup was running.</p>
-                </li>
-                <li class="incident status--sick" data-start="2026-10-15T17:18+02:00" data-end="2026-10-15T19:32+02:00">
-                    <p class="incident__when">
-                        <time datetime="2026-10-15T17:18+02:00">17:18</time>
-                        <a class="button button--ghost button--small" th:href="@{/service}">Backup</a>
-                        <span class="incident__what"><strong>Having problems</strong> <span>for 2 h 14 min</span></span>
-                    </p>
-                    <p class="incident__summary">One of the servers stopped answering, the others took over.</p>
-                </li>
-            </ol>
+            <p class="empty" data-incidents-empty hidden>No incidents in the <span data-period th:text="${period}">past week</span>.</p>
+            <div class="past__group" th:each="day : ${days}">
+                <h3 class="past__day" th:text="${day.label()}">Today</h3>
+                <ol class="incidents">
+                    <li class="incident" th:each="entry : ${day.entries()}"
+                        th:classappend="${'status--' + entry.status().css()}"
+                        th:attr="data-start=${entry.start()},data-end=${entry.end()}">
+                        <p class="incident__when">
+                            <time th:datetime="${entry.start()}" th:text="${entry.when()}">12:22</time>
+                            <a class="button button--ghost button--small" th:href="@{/services/{slug}(slug=${entry.slug()})}"
+                               th:text="${entry.service()}">POP Print</a>
+                            <span class="incident__what"><strong th:text="${entry.status().label()}">Down</strong>
+                                <span th:text="${entry.length()}">for 24 min</span></span>
+                        </p>
+                        <p class="incident__summary" th:text="${entry.summary()}">Not answering.</p>
+                    </li>
+                </ol>
             </div>
         </section>
     </main>
 
     <footer th:replace="~{fragments/layout :: footer}"></footer>
 </div>
-<script id="status-data" type="application/json">{"now":"2026-10-29T13:00+01:00","ranges":{"day":{"period":"past day","from":"2026-10-28T13:00+01:00","axisStart":"Wed 13:00","starts":["2026-10-28T13:00+01:00","2026-10-28T14:00+01:00","2026-10-28T15:00+01:00","2026-10-28T16:00+01:00","2026-10-28T17:00+01:00","2026-10-28T18:00+01:00","2026-10-28T19:00+01:00","2026-10-28T20:00+01:00","2026-10-28T21:00+01:00","2026-10-28T22:00+01:00","2026-10-28T23:00+01:00","2026-10-29T00:00+01:00","2026-10-29T01:00+01:00","2026-10-29T02:00+01:00","2026-10-29T03:00+01:00","2026-10-29T04:00+01:00","2026-10-29T05:00+01:00","2026-10-29T06:00+01:00","2026-10-29T07:00+01:00","2026-10-29T08:00+01:00","2026-10-29T09:00+01:00","2026-10-29T10:00+01:00","2026-10-29T11:00+01:00","2026-10-29T12:00+01:00"]},"week":{"period":"past week","from":"2026-10-22T16:00+02:00","axisStart":"Thu 22 Oct","starts":["2026-10-22T16:00+02:00","2026-10-22T20:00+02:00","2026-10-23T00:00+02:00","2026-10-23T04:00+02:00","2026-10-23T08:00+02:00","2026-10-23T12:00+02:00","2026-10-23T16:00+02:00","2026-10-23T20:00+02:00","2026-10-24T00:00+02:00","2026-10-24T04:00+02:00","2026-10-24T08:00+02:00","2026-10-24T12:00+02:00","2026-10-24T16:00+02:00","2026-10-24T20:00+02:00","2026-10-25T00:00+02:00","2026-10-25T04:00+01:00","2026-10-25T08:00+01:00","2026-10-25T12:00+01:00","2026-10-25T16:00+01:00","2026-10-25T20:00+01:00","2026-10-26T00:00+01:00","2026-10-26T04:00+01:00","2026-10-26T08:00+01:00","2026-10-26T12:00+01:00","2026-10-26T16:00+01:00","2026-10-26T20:00+01:00","2026-10-27T00:00+01:00","2026-10-27T04:00+01:00","2026-10-27T08:00+01:00","2026-10-27T12:00+01:00","2026-10-27T16:00+01:00","2026-10-27T20:00+01:00","2026-10-28T00:00+01:00","2026-10-28T04:00+01:00","2026-10-28T08:00+01:00","2026-10-28T12:00+01:00","2026-10-28T16:00+01:00","2026-10-28T20:00+01:00","2026-10-29T00:00+01:00","2026-10-29T04:00+01:00","2026-10-29T08:00+01:00","2026-10-29T12:00+01:00"]},"2weeks":{"period":"past 2 weeks","from":"2026-10-15T16:00+02:00","axisStart":"Thu 15 Oct","starts":["2026-10-15T16:00+02:00","2026-10-16T00:00+02:00","2026-10-16T08:00+02:00","2026-10-16T16:00+02:00","2026-10-17T00:00+02:00","2026-10-17T08:00+02:00","2026-10-17T16:00+02:00","2026-10-18T00:00+02:00","2026-10-18T08:00+02:00","2026-10-18T16:00+02:00","2026-10-19T00:00+02:00","2026-10-19T08:00+02:00","2026-10-19T16:00+02:00","2026-10-20T00:00+02:00","2026-10-20T08:00+02:00","2026-10-20T16:00+02:00","2026-10-21T00:00+02:00","2026-10-21T08:00+02:00","2026-10-21T16:00+02:00","2026-10-22T00:00+02:00","2026-10-22T08:00+02:00","2026-10-22T16:00+02:00","2026-10-23T00:00+02:00","2026-10-23T08:00+02:00","2026-10-23T16:00+02:00","2026-10-24T00:00+02:00","2026-10-24T08:00+02:00","2026-10-24T16:00+02:00","2026-10-25T00:00+02:00","2026-10-25T08:00+01:00","2026-10-25T16:00+01:00","2026-10-26T00:00+01:00","2026-10-26T08:00+01:00","2026-10-26T16:00+01:00","2026-10-27T00:00+01:00","2026-10-27T08:00+01:00","2026-10-27T16:00+01:00","2026-10-28T00:00+01:00","2026-10-28T08:00+01:00","2026-10-28T16:00+01:00","2026-10-29T00:00+01:00","2026-10-29T08:00+01:00"]}}}</script>
+<script id="status-data" type="application/json" th:utext="${pageData}"></script>
 <script th:src="@{/js/status.js}" defer></script>
 </body>
 </html>

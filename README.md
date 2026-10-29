@@ -72,10 +72,11 @@ Open `http://localhost:8080`. If port 8080 is already taken, the app starts on
 the next free port (8081, 8082, ...) and says so in the log. Set `SERVER_PORT`
 to start from a different port.
 
-The home page is the template for the public status page, and
-`http://localhost:8080/service` is the template for one service's page. The
-services, timelines and incidents on them are example content written into the
-HTML, to be replaced by real data later.
+The home page is the public status page, and every service has its own page
+at `http://localhost:8080/services/<name>`, for example `/services/pop-print`.
+Both are Thymeleaf templates filled from example data in the
+`dk.pop.status.temp.view.example` package, which makes up two weeks of
+incidents per service. Real data replaces that package later.
 
 Icons come from [Lucide](https://lucide.dev) (ISC license, see
 `THIRD_PARTY_NOTICES.md`) and live in
