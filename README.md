@@ -68,8 +68,24 @@ docker compose up -d --wait
 ./mvnw spring-boot:run
 ```
 
-Open `http://localhost:8080`. Messages can be added and deleted from the home
-page. The MySQL service stores its data in a Docker volume named `mysql-data`.
+Open `http://localhost:8080`. If port 8080 is already taken, the app starts on
+the next free port (8081, 8082, ...) and says so in the log. Set `SERVER_PORT`
+to start from a different port.
+
+The home page is the template for the public status page, and
+`http://localhost:8080/service` is the template for one service's page. The
+services, timelines and incidents on them are example content written into the
+HTML, to be replaced by real data later.
+
+Icons come from [Lucide](https://lucide.dev) (ISC license, see
+`THIRD_PARTY_NOTICES.md`) and live in
+`src/main/resources/templates/fragments/icons.html`. To add one, copy its paths
+from lucide.dev into a new `th:case` there, then use it with
+`<svg th:replace="~{fragments/icons :: icon('name')}"></svg>`.
+
+Announcements are posted and deleted at `http://localhost:8080/messages` and
+show on the home page. The MySQL service stores its data in a Docker volume
+named `mysql-data`.
 To stop the service without deleting its data, run `docker compose down`.
 To delete the database and all its messages and initialize it again with new
 passwords, run `docker compose down --volumes`.
