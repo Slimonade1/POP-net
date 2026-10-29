@@ -1,17 +1,18 @@
 :root {
-    --paper: #ffffff;
-    --ink: #22262b;
-    --quiet: #646b74;
-    --rule: #e3e5e8;
-    --wash: #f3f4f6;
+    --paper: #f5f6f8;
+    --ink: #2b3038;
+    --quiet: #5f6670;
+    --rule: #dde0e4;
+    --divider: #c3c8cf;
+    --wash: #eaecef;
     --link: #1d5fb8;
 
     --ok: #2b8a36;
     --sick: #ec9f07;
     --down: #d33b36;
     --ok-text: #1e7729;
-    --sick-text: #a26500;
-    --down-text: #be2323;
+    --sick-text: #9a6000;
+    --down-text: #b92222;
 
     --font: "Atkinson Hyperlegible Next", system-ui, sans-serif;
     --page: 60rem;
@@ -20,11 +21,12 @@
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --paper: #17191c;
-        --ink: #eceef0;
-        --quiet: #9aa1a9;
-        --rule: #2d3136;
-        --wash: #212428;
+        --paper: #1f2226;
+        --ink: #dfe2e6;
+        --quiet: #9ba2aa;
+        --rule: #32363c;
+        --divider: #474d55;
+        --wash: #292d32;
         --link: #7fb0f5;
         --ok: #298a41;
         --sick: #d78c00;
@@ -373,7 +375,7 @@ a {
 .row--head {
     align-items: end;
     padding-block: 0 0.4rem;
-    border-bottom: 2px solid var(--ink);
+    border-bottom: 2px solid var(--divider);
     color: var(--quiet);
     font-size: 0.8125rem;
 }
@@ -507,7 +509,7 @@ a {
     background:
         linear-gradient(var(--rule), var(--rule)) 0 0 / 100% 1px no-repeat,
         linear-gradient(var(--rule), var(--rule)) 0 50% / 100% 1px no-repeat,
-        linear-gradient(var(--quiet), var(--quiet)) 0 100% / 100% 1px no-repeat;
+        linear-gradient(var(--divider), var(--divider)) 0 100% / 100% 1px no-repeat;
 }
 
 .chart__line {
@@ -584,7 +586,7 @@ a {
 .past__day {
     margin: 1.5rem 0 0.75rem;
     padding-bottom: 0.4rem;
-    border-bottom: 2px solid var(--ink);
+    border-bottom: 2px solid var(--divider);
     font-size: 1.0625rem;
     font-weight: 800;
 }
@@ -658,7 +660,7 @@ a {
     margin: 0;
     padding: 0;
     list-style: none;
-    border-top: 2px solid var(--ink);
+    border-top: 2px solid var(--divider);
 }
 
 .posted li {
