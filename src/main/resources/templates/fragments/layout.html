@@ -23,7 +23,7 @@
             th:replace="~{fragments/icons :: icon('mail')}"></svg>Contact us</a>
 </header>
 
-<header class="admin-header" th:fragment="adminHeader(active)">
+<div class="admin-header" role="banner" th:fragment="adminHeader(active)">
     <div class="admin-header__top">
         <a class="brand" th:href="@{/admin}">
             <img class="brand__logo" src="https://raw.githubusercontent.com/netgrp/logo/main/pop-opti-nofont.svg"
@@ -40,7 +40,7 @@
         <a th:href="@{/messages}" th:attr="aria-current=${active == 'announcements' ? 'page' : null}">Announcements</a>
         <a class="admin-nav__out" th:href="@{/}">Status page<svg th:replace="~{fragments/icons :: icon('arrow-up-right')}"></svg></a>
     </nav>
-</header>
+</div>
 
 <div class="ranges" role="group" aria-label="Time range" th:fragment="ranges">
     <button type="button" data-range="day" aria-pressed="false">1 day</button>
