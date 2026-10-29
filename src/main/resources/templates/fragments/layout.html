@@ -39,6 +39,8 @@
     <div class="site-footer__actions">
         <a class="button button--ghost button--small" href="mailto:netgrp@pop.dk">Write to netgrp@pop.dk</a>
         <a class="button button--ghost button--small" href="https://www.pop.dk/">Go to pop.dk</a>
+        <a class="button button--ghost button--small" th:href="@{/admin}"><svg
+                th:replace="~{fragments/icons :: icon('lock')}"></svg>Admin login</a>
     </div>
     <p>Run by the network group at P. O. Pedersen Kollegiet.</p>
 </footer>

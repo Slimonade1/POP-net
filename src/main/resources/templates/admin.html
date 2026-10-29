@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Admin, POP status')}"></head>
+<body>
+<div class="page">
+    <header th:replace="~{fragments/layout :: header}"></header>
+
+    <main>
+        <p class="back"><a class="button button--ghost button--small" th:href="@{/}"><svg
+                th:replace="~{fragments/icons :: icon('arrow-left')}"></svg>Status page</a></p>
+        <h1 class="page-title">Admin</h1>
+        <p class="lede">Logged in as <strong th:text="${username}">admin</strong>.</p>
+
+        <section aria-labelledby="tools-title">
+            <h2 id="tools-title" class="section-title">Tools</h2>
+            <ul class="tools">
+                <li class="tool">
+                    <div>
+                        <p class="tool__name"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg>Announcements</p>
+                        <p class="tool__meta" th:text="${announcementCount == 1 ? '1 posted' : announcementCount + ' posted'}">2 posted</p>
+                    </div>
+                    <a class="button button--primary button--small" th:href="@{/messages}">Open</a>
+                </li>
+            </ul>
+        </section>
+
+        <form class="logout" method="post" th:action="@{/logout}">
+            <button class="button button--ghost button--small" type="submit"><svg
+                    th:replace="~{fragments/icons :: icon('log-out')}"></svg>Log out</button>
+        </form>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</div>
+</body>
+</html>

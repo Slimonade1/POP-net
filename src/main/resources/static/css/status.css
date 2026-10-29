@@ -728,6 +728,70 @@ a {
     margin-top: 0.75rem;
 }
 
+.login {
+    max-width: 24rem;
+}
+
+.login input {
+    display: block;
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--quiet);
+    border-radius: 6px;
+    background: var(--paper);
+    color: inherit;
+    font: inherit;
+}
+
+.login .button {
+    margin-top: 0.25rem;
+}
+
+.login__alert {
+    margin: 0 0 1.25rem;
+    padding: 0.6rem 1rem;
+    border-left: 4px solid var(--status, var(--divider));
+    border-radius: 0 6px 6px 0;
+    background: var(--wash);
+    color: var(--status-text, var(--ink));
+    font-weight: 600;
+}
+
+.tools {
+    max-width: var(--measure);
+    margin: 0 0 2rem;
+    padding: 0;
+    list-style: none;
+    border-top: 2px solid var(--divider);
+}
+
+.tool {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.8rem;
+    border-bottom: 1px solid var(--rule);
+}
+
+.tool p {
+    margin: 0;
+}
+
+.tool__name {
+    font-weight: 600;
+}
+
+.tool__meta {
+    color: var(--quiet);
+    font-size: 0.9375rem;
+}
+
+.logout {
+    margin-bottom: 2rem;
+}
+
 .posted {
     max-width: var(--measure);
     margin: 0;
