@@ -228,10 +228,6 @@ a {
     margin-bottom: 3rem;
 }
 
-.history .legend {
-    margin-bottom: 1rem;
-}
-
 .history__head {
     display: flex;
     flex-wrap: wrap;
@@ -279,41 +275,15 @@ a {
     font-weight: 600;
 }
 
-.legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem 1.25rem;
-    margin: 0 0 1.5rem;
-    padding: 0;
-    list-style: none;
-    color: var(--quiet);
-    font-size: 0.875rem;
-}
-
-.legend li {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.legend__key {
-    width: 0.75rem;
-    height: 0.75rem;
-    border-radius: 2px;
-}
-
-.strip__cell.status--operational,
-.legend__key.status--operational {
+.strip__cell.status--operational {
     background: var(--ok);
 }
 
-.strip__cell.status--sick,
-.legend__key.status--sick {
+.strip__cell.status--sick {
     background: var(--sick);
 }
 
-.strip__cell.status--down,
-.legend__key.status--down {
+.strip__cell.status--down {
     background: var(--down);
 }
 
@@ -564,10 +534,6 @@ a {
 
 .panel--history .strip {
     margin-top: 0.5rem;
-}
-
-.panel .legend {
-    margin-top: 0.75rem;
 }
 
 .axis {
