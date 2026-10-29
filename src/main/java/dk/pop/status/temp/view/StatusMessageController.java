@@ -16,10 +16,10 @@ public class StatusMessageController {
         this.service = service;
     }
 
-    @GetMapping("/")
-    public String index(Model model) {
+    @GetMapping("/messages")
+    public String messages(Model model) {
         model.addAttribute("messages", service.findAll());
-        return "index";
+        return "messages";
     }
 
     @PostMapping("/messages")
@@ -31,12 +31,12 @@ public class StatusMessageController {
         } catch (IllegalArgumentException exception) {
             redirectAttributes.addFlashAttribute("error", exception.getMessage());
         }
-        return "redirect:/";
+        return "redirect:/messages";
     }
 
     @PostMapping("/messages/delete")
     public String deleteMessage(@RequestParam long id) {
         service.delete(id);
-        return "redirect:/";
+        return "redirect:/messages";
     }
 }
