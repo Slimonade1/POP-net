@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title}">POP status</title>
+    <link rel="icon" href="https://raw.githubusercontent.com/netgrp/logo/main/pop-opti-nofont.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;800&display=swap">
+    <link rel="stylesheet" th:href="@{/css/status.css}">
+</head>
+<body>
+
+<header class="site-header" th:fragment="header">
+    <a class="brand" href="/" th:href="@{/}">
+        <img class="brand__logo" src="https://raw.githubusercontent.com/netgrp/logo/main/pop-opti-nofont.svg"
+             alt="POP Kollegiet" width="56" height="28">
+        <span class="brand__name">Status</span>
+    </a>
+    <a class="button button--ghost button--small" href="mailto:netgrp@pop.dk"><svg
+            th:replace="~{fragments/icons :: icon('mail')}"></svg>Contact us</a>
+</header>
+
+<div class="ranges" role="group" aria-label="Time range" th:fragment="ranges">
+    <button type="button" data-range="day" aria-pressed="false">1 day</button>
+    <button type="button" data-range="week" aria-pressed="true">1 week</button>
+    <button type="button" data-range="2weeks" aria-pressed="false">2 weeks</button>
+</div>
+
+<div class="strip" th:fragment="strip(row)" role="img" tabindex="0"
+     aria-label="Status over time, newest on the right. Use the arrow keys to read each slice."
+     th:attr="data-patterns=${row.patterns()},data-incidents=${row.incidents()}"><span class="strip__cell"
+        th:each="cell : ${row.cells()}" th:classappend="${'status--' + cell}"></span></div>
+
+<footer class="site-footer" th:fragment="footer">
+    <p>Something broken that is not listed here? Tell the network group.</p>
+    <div class="site-footer__actions">
+        <a class="button button--ghost button--small" href="mailto:netgrp@pop.dk">Write to netgrp@pop.dk</a>
+        <a class="button button--ghost button--small" href="https://www.pop.dk/">Go to pop.dk</a>
+    </div>
+    <p>Run by the network group at P. O. Pedersen Kollegiet.</p>
+</footer>
+
+</body>
+</html>

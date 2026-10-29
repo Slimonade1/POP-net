@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('POP status')}"></head>
+<body>
+<div class="page">
+    <header th:replace="~{fragments/layout :: header}"></header>
+
+    <main>
+        <section class="answer" th:classappend="${'status--' + overall.css()}" aria-live="polite">
+            <h1 class="answer__headline" th:text="${headline}">Everything is working.</h1>
+            <p class="answer__meta">Checked at <time th:text="${checkedAt}">13:00</time>.</p>
+            <ul class="problems" th:unless="${#lists.isEmpty(problems)}">
+                <li class="problem" th:each="problem : ${problems}" th:classappend="${'status--' + problem.status().css()}">
+                    <div class="problem__head">
+                        <a class="button button--ghost button--small" th:href="@{/services/{slug}(slug=${problem.slug()})}"
+                           th:text="${problem.name()}">Reset Password</a>
+                        <span class="problem__status"><svg th:replace="~{fragments/icons :: icon(${problem.status().icon()})}"></svg><th:block
+                                th:text="${problem.status().label()}">Down</th:block></span>
+                        <span class="problem__since" th:text="${problem.since()}">Since 14:25, 12 min</span>
+                    </div>
+                    <p class="problem__summary" th:text="${problem.summary()}">Not answering since the last update.</p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="notices" th:unless="${#lists.isEmpty(notices)}" aria-labelledby="notices-title">
+            <h2 id="notices-title" class="visually-hidden">From the network group</h2>
+            <p class="notice" th:each="notice : ${notices}"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span th:text="${notice.message}">Planned maintenance tonight.</span></p>
+        </section>
+
+        <section class="history" aria-labelledby="history-title">
+            <div class="history__head">
+                <h2 id="history-title" class="history__title">The <span data-period th:text="${period}">past week</span></h2>
+                <div th:replace="~{fragments/layout :: ranges}"></div>
+            </div>
+
+            <section class="group" th:each="group, groupStat : ${groups}" th:attr="aria-labelledby=${'group-' + groupStat.index}">
+                <div class="row row--head">
+                    <h3 class="row__name group__name" th:id="${'group-' + groupStat.index}" th:text="${group.name()}">Web services</h3>
+                    <th:block th:if="${groupStat.first}">
+                        <div class="row__axis" aria-hidden="true"><span data-axis-start th:text="${axisStart}">Thu 22 Oct</span><span>Now</span></div>
+                        <span class="row__uptime" aria-hidden="true">Uptime</span>
+                        <span class="row__now" aria-hidden="true">Status</span>
+                    </th:block>
+                </div>
+                <ul class="rows">
+                    <li class="row" th:each="row : ${group.rows()}" th:classappend="${'status--' + row.status().css()}">
+                        <div class="row__name">
+                            <a class="button button--ghost button--small" th:href="@{/services/{slug}(slug=${row.slug()})}"
+                               th:text="${row.name()}">POP Print</a>
+                        </div>
+                        <div th:replace="~{fragments/layout :: strip(${row})}"></div>
+                        <span class="row__uptime" th:attr="data-uptime=${row.uptimes()}" th:text="${row.uptime()}">100 %</span>
+                        <span class="row__now"><th:block th:if="${row.status().icon() != null}"><svg th:replace="~{fragments/icons :: icon(${row.status().icon()})}"></svg></th:block><th:block
+                                th:text="${row.status().label()}">Working</th:block></span>
+                        <a class="row__note" th:if="${row.note() != null}" th:href="${'#' + row.noteId()}"
+                           th:title="${row.note()}" th:text="${row.note()}">Answering slowly.</a>
+                    </li>
+                </ul>
+            </section>
+        </section>
+
+        <section class="past" aria-labelledby="past-title">
+            <h2 id="past-title" class="history__title">Past incidents</h2>
+            <p class="empty" data-incidents-empty hidden>No incidents in the <span data-period th:text="${period}">past week</span>.</p>
+            <div class="past__group" th:each="day : ${days}">
+                <h3 class="past__day" th:text="${day.label()}">Today</h3>
+                <ol class="incidents">
+                    <li class="incident" th:each="entry : ${day.entries()}" th:id="${entry.id()}"
+                        th:classappend="${'status--' + entry.status().css()}"
+                        th:attr="data-start=${entry.start()},data-end=${entry.end()}">
+                        <p class="incident__when">
+                            <time th:datetime="${entry.start()}" th:text="${entry.when()}">12:22</time>
+                            <a class="button button--ghost button--small" th:href="@{/services/{slug}(slug=${entry.slug()})}"
+                               th:text="${entry.service()}">POP Print</a>
+                            <span class="incident__what"><strong th:text="${entry.status().label()}">Down</strong>
+                                <span th:text="${entry.length()}">for 24 min</span></span>
+                        </p>
+                        <p class="incident__summary" th:text="${entry.summary()}">Not answering.</p>
+                    </li>
+                </ol>
+            </div>
+        </section>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</div>
+<script id="status-data" type="application/json" th:utext="${pageData}"></script>
+<script th:src="@{/js/status.js}" defer></script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${row.name() + ', POP status'})}"></head>
+<body>
+<div class="page">
+    <header th:replace="~{fragments/layout :: header}"></header>
+
+    <main th:classappend="${'status--' + row.status().css()}">
+        <p class="back"><a class="button button--ghost button--small" th:href="@{/}"><svg
+                th:replace="~{fragments/icons :: icon('arrow-left')}"></svg>All services</a></p>
+        <h1 class="page-title" th:text="${row.name()}">POP Print</h1>
+        <p class="now"><span class="now__status"><th:block th:if="${row.status().icon() != null}"><svg th:replace="~{fragments/icons :: icon(${row.status().icon()})}"></svg></th:block><th:block
+                th:text="${row.status().label() + ' now'}">Having problems now</th:block></span><th:block
+                th:text="${nowText}">, answering in 119 ms.</th:block></p>
+        <a class="row__note now__note" th:if="${row.note() != null}" th:href="${'#' + row.noteId()}"
+           th:title="${row.note()}" th:text="${row.note()}">Answering slowly.</a>
+
+        <section class="panel panel--history" aria-label="History">
+            <div class="history__head">
+                <p class="uptime"><strong th:attr="data-uptime=${row.uptimes()}" th:text="${row.uptime()}">99.82 %</strong>
+                    <span>uptime in the <span data-period th:text="${period}">past week</span></span></p>
+                <div th:replace="~{fragments/layout :: ranges}"></div>
+            </div>
+            <div class="chart" th:if="${service.hasLatency()}">
+                <div class="chart__grid" aria-hidden="true">
+                    <span style="top:0%" data-grid="top"></span>
+                    <span style="top:50%" data-grid="middle"></span>
+                    <span style="top:100%">0</span>
+                </div>
+                <svg class="chart__plot" viewBox="0 0 720 200" preserveAspectRatio="none" role="img" tabindex="0"
+                     aria-label="Response time"
+                     th:attr="data-values=${values},data-patterns=${row.patterns()},data-incidents=${row.incidents()}">
+                    <g class="chart__bands"></g>
+                    <path class="chart__line" d=""></path>
+                    <line class="chart__cross" x1="0" x2="0" y1="0" y2="200"></line>
+                </svg>
+            </div>
+            <p class="empty" th:unless="${service.hasLatency()}">
+                This service is checked from inside the network, so it has no response time.
+            </p>
+            <div th:replace="~{fragments/layout :: strip(${row})}"></div>
+            <div class="axis" aria-hidden="true"><span data-axis-start th:text="${axisStart}">Thu 22 Oct</span><span>Now</span></div>
+        </section>
+
+        <section class="panel" aria-labelledby="incidents-title">
+            <h2 id="incidents-title" class="section-title">Incidents in the <span data-period th:text="${period}">past week</span></h2>
+            <p class="empty" data-incidents-empty hidden>No incidents in the <span data-period th:text="${period}">past week</span>.</p>
+            <ol class="incidents">
+                <li class="incident" th:each="entry : ${incidents}" th:id="${entry.id()}"
+                    th:classappend="${'status--' + entry.status().css()}"
+                    th:attr="data-start=${entry.start()},data-end=${entry.end()}">
+                    <p class="incident__when"><time th:datetime="${entry.start()}" th:text="${entry.when()}">Thu 29 Oct, 12:22</time></p>
+                    <p class="incident__what"><strong th:text="${entry.status().label()}">Down</strong>
+                        <span th:text="${entry.length()}">for 18 min</span></p>
+                    <p class="incident__summary" th:text="${entry.summary()}">Not answering.</p>
+                </li>
+            </ol>
+        </section>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</div>
+<script id="status-data" type="application/json" th:utext="${pageData}"></script>
+<script th:src="@{/js/status.js}" defer></script>
+</body>
+</html>
