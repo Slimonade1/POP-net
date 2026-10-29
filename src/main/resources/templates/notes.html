@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Status notes, POP status')}"></head>
+<body>
+<div class="page">
+    <header th:replace="~{fragments/layout :: header}"></header>
+
+    <main>
+        <h1 class="page-title">Status notes</h1>
+        <p class="lede">Add a note to a service, or update and delete existing notes.</p>
+
+        <form class="compose" method="post" th:action="@{/notes}">
+            <label for="description">New note</label>
+            <textarea id="description" name="description" rows="3" maxlength="511" required></textarea>
+            <label for="serviceId">Service ID</label>
+            <input id="serviceId" name="serviceId" type="number" min="1" required>
+            <p class="compose__error" th:if="${error}" th:text="${error}" role="alert"></p>
+            <button class="button button--primary" type="submit">Create note</button>
+        </form>
+
+        <section aria-labelledby="notes-title">
+            <h2 id="notes-title" class="section-title">Existing notes</h2>
+            <p class="empty" th:if="${#lists.isEmpty(notes)}">No status notes have been added.</p>
+            <ul class="posted" th:unless="${#lists.isEmpty(notes)}">
+                <li th:each="note : ${notes}">
+                    <form method="post" th:action="@{/notes/update}">
+                        <input type="hidden" name="id" th:value="${note.id}">
+                        <label th:for="${'description-' + note.id}">Description</label>
+                        <textarea th:id="${'description-' + note.id}" name="description" rows="2" maxlength="511"
+                                  required th:text="${note.description}"></textarea>
+                        <label th:for="${'service-' + note.id}">Service ID</label>
+                        <input th:id="${'service-' + note.id}" name="serviceId" type="number" min="1"
+                               required th:value="${note.serviceId}">
+                        <button class="button button--ghost button--small" type="submit">Save</button>
+                    </form>
+                    <form method="post" th:action="@{/notes/delete}">
+                        <input type="hidden" name="id" th:value="${note.id}">
+                        <button class="button button--ghost button--small button--danger" type="submit">Delete</button>
+                    </form>
+                </li>
+            </ul>
+        </section>
+    </main>
+
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</div>
+</body>
+</html>

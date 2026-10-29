@@ -1,6 +1,5 @@
 package dk.pop.status.temp.view;
 
-import dk.pop.status.temp.services.StatusMessageService;
 import dk.pop.status.temp.view.example.StatusPages;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -11,17 +10,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Controller
 public class HomeController {
-    private final StatusMessageService messages;
     private final StatusPages pages;
 
-    public HomeController(StatusMessageService messages, StatusPages pages) {
-        this.messages = messages;
+    public HomeController(StatusPages pages) {
         this.pages = pages;
     }
 
     @GetMapping("/")
     public String home(Model model) {
-        model.addAttribute("notices", messages.findAll());
         pages.home(model);
         return "home";
     }

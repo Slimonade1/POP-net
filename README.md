@@ -84,11 +84,11 @@ Icons come from [Lucide](https://lucide.dev) (ISC license, see
 from lucide.dev into a new `th:case` there, then use it with
 `<svg th:replace="~{fragments/icons :: icon('name')}"></svg>`.
 
-Announcements are posted and deleted at `http://localhost:8080/messages` and
-show on the home page. The MySQL service stores its data in a Docker volume
-named `mysql-data`.
+Status notes can be created, updated, and deleted at
+`http://localhost:8080/notes`. Each note belongs to a service. The MySQL
+service stores its data in a Docker volume named `mysql-data`.
 To stop the service without deleting its data, run `docker compose down`.
-To delete the database and all its messages and initialize it again with new
+To delete the database and all its notes and initialize it again with new
 passwords, run `docker compose down --volumes`.
 
 By default, the application connects to `jdbc:mysql://localhost:3307/popnet`

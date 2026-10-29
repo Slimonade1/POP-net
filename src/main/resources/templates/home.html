@@ -23,11 +23,6 @@
             </ul>
         </section>
 
-        <section class="notices" th:unless="${#lists.isEmpty(notices)}" aria-labelledby="notices-title">
-            <h2 id="notices-title" class="visually-hidden">From the network group</h2>
-            <p class="notice" th:each="notice : ${notices}"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span th:text="${notice.message}">Planned maintenance tonight.</span></p>
-        </section>
-
         <section class="history" aria-labelledby="history-title">
             <div class="history__head">
                 <h2 id="history-title" class="history__title">The <span data-period th:text="${period}">past week</span></h2>
