@@ -14,6 +14,6 @@ CREATE TABLE IF NOT EXISTS status_logs(
     time TIME,
     date DATE,
     message VARCHAR(255),
-    FOREIGN KEY (service_id) REFERENCES services(id)
+    FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
 
 );
