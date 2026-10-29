@@ -767,10 +767,6 @@ a {
 }
 
 @media (max-width: 44rem) {
-    .site-header__contact {
-        display: none;
-    }
-
     .row {
         grid-template-columns: 1fr auto auto;
         grid-template-areas:
