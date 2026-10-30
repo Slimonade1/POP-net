@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:./monitoring.yaml
   application:
     name: pop-net
   datasource:
@@ -8,4 +10,6 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:migrations/*.sql
+      schema-locations:
+        - classpath:migrations/0000.sql
+        - classpath:migrations/0001-monitoring.sql

@@ -1,114 +1,40 @@
 package dk.pop.status.temp.repository;
 
 import dk.pop.status.temp.domain.StatusLog;
-
-import dk.pop.status.temp.utils.UnitOfWork;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
-import org.springframework.web.context.annotation.RequestScope;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-
-import java.sql.Connection;
-import java.sql.SQLException;
-import javax.sql.DataSource;
-
-import static java.sql.DriverManager.getConnection;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Repository
-@RequestScope
-public class StatusLogRepository implements UnitOfWork {
-    private final DataSource dataSource;
-    private Connection connection;
+public class StatusLogRepository {
+    private final JdbcTemplate jdbc;
 
-    public void create(StatusLog statusLog) {
-        var findServiceId = "SELECT id FROM services WHERE name = ?";
-        var stmt = """
-        INSERT INTO status_logs
-            (service_id, stats, time, date, message)
-        VALUES (?, ?, ?, ?, ?)
-        """;
-
-        try (var findStatement = getConnection().prepareStatement(findServiceId)) {
-            findStatement.setString(1, statusLog.service_name());
-
-            try (var resultSet = findStatement.executeQuery()) {
-                if (!resultSet.next()) {
-                    throw new RuntimeException("Service not found: " + statusLog.service_name());
-                }
-
-                long serviceId = resultSet.getLong("id");
-
-                try (var insertStatement = getConnection().prepareStatement(stmt)) {
-
-                    insertStatement.setLong(1, serviceId);
-                    insertStatement.setString(2, statusLog.status());
-                    insertStatement.setTime(3, java.sql.Time.valueOf(statusLog.checkedAtTime()));
-                    insertStatement.setDate(4, java.sql.Date.valueOf(statusLog.checkedAtDate()));
-                    insertStatement.setString(5, statusLog.message());
-
-                    insertStatement.executeUpdate();
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to create status log", e);
-        }
+    public StatusLogRepository(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
     }
 
-    //
-
-    private Connection getConnection() {
-        if (connection == null) {
-            throw new RuntimeException("Connection not opened");
-        }
-        return connection;
+    @Transactional
+    public void create(StatusLog log) {
+        // A stable configuration ID keeps history together when a display name changes.
+        jdbc.update("""
+                INSERT INTO services (monitor_key, name) VALUES (?, ?)
+                ON DUPLICATE KEY UPDATE name = ?
+                """, log.serviceKey(), log.serviceName(), log.serviceName());
+        Long serviceId = jdbc.queryForObject(
+                "SELECT id FROM services WHERE monitor_key = ?", Long.class, log.serviceKey());
+        LocalDateTime checkedAt = LocalDateTime.ofInstant(log.checkedAt(), ZoneOffset.UTC);
+        String summary = log.errorMessage() == null ? log.status() : log.errorMessage();
+        jdbc.update("""
+                INSERT INTO status_logs
+                    (service_id, stats, time, date, message, checked_at, duration_ms,
+                     exit_code, stdout, stderr, check_error, output_truncated)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, serviceId, log.status(), checkedAt.toLocalTime(), checkedAt.toLocalDate(),
+                summary.substring(0, Math.min(summary.length(), 255)), checkedAt,
+                log.durationMs(), log.exitCode(), log.stdout(), log.stderr(),
+                log.errorMessage(), log.outputTruncated());
     }
-
-    public StatusLogRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
-
-    @Override
-    public UnitOfWork begin() throws UnitOfWorkException {
-        try {
-            connection = dataSource.getConnection();
-            connection.setAutoCommit(false);
-            return this;
-        } catch (SQLException e) {
-            throw new UnitOfWorkException("Failed to begin transaction", e);
-        }
-    }
-
-    @Override
-    public void commit() throws UnitOfWorkException {
-        try {
-            connection.commit();
-        } catch (SQLException e) {
-            throw new UnitOfWorkException("Failed to commit transaction", e);
-        }
-    }
-
-    @Override
-    public void rollback() throws UnitOfWorkException {
-        try {
-            if (connection != null) {
-                connection.rollback();
-            }
-        } catch (SQLException e) {
-            throw new UnitOfWorkException("Failed to roll back transaction", e);
-        }
-    }
-
-    @Override
-    public void close() throws UnitOfWorkException {
-        try {
-            if (connection != null) {
-                connection.close();
-                connection = null;
-            }
-        } catch (SQLException e) {
-            throw new UnitOfWorkException("Failed to close connection", e);
-        }
-    }
-
 }

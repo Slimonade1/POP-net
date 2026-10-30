@@ -99,3 +99,83 @@ in `src/main/resources/migrations` runs when the application starts.
 Application code is organized into `domain`, `repository`, `services`, `utils`,
 and `view` packages. Thymeleaf templates live in
 `src/main/resources/templates`.
+
+## Server monitoring (first version)
+
+The backend can run administrator-provided scripts and save every completed check
+to MySQL. The included `scripts/check-ping.sh` checks one server using Linux
+`ping` from iputils. It sends three packets with a six-second deadline.
+Run the app on a Linux machine with Bash and iputils installed for this script.
+Custom scripts can use other commands available on the application host.
+
+From the repository root, create your external configuration:
+
+```sh
+cp monitoring.example.yaml monitoring.yaml
+```
+
+Edit `monitoring.yaml` and replace `127.0.0.1` with the server's IP address or
+hostname. The example checks localhost every 60 seconds with a ten-second timeout.
+Keep `id` stable when renaming a service so its history stays together. Add more
+entries under `monitoring.services` to check more servers, or use `enabled: false`
+to disable an entry. Restart the application after editing the file.
+
+Start the application as usual with `./run.sh`. It automatically imports
+`monitoring.yaml` from the working directory. If the file is absent, no checks run.
+The local file is ignored by Git. To use a file elsewhere, set
+`SPRING_CONFIG_ADDITIONAL_LOCATION=file:/absolute/path/monitoring.yaml`.
+Command paths are resolved from the application's working directory, so use
+absolute script paths when running outside the repository root.
+
+Checks begin after startup. A single worker runs them sequentially; each service's
+interval is measured from the end of its previous attempt. A slow check can delay
+other checks. Run one application instance for this early version to avoid duplicate
+checks. There are no retries yet.
+
+### Script contract and stored results
+
+Commands are configured as an argument list and executed directly, without shell
+string interpolation. Scripts must run in the foreground and finish within the
+configured timeout. Only administrators should edit these commands: they execute
+with the application's operating-system permissions.
+
+| Script exit code | Stored status | Meaning |
+| --- | --- | --- |
+| 0 | `healthy` | Check succeeded |
+| 1 | `sick` | Degraded; the ping wrapper received only some replies |
+| 2 | `down` | Check failed; the ping wrapper received no replies |
+| Anything else | `error` | The check itself failed to execute correctly |
+
+A runner timeout or failure to start also produces `error`, rather than claiming
+the monitored server is down. The ping wrapper translates iputils exit codes into
+this contract. Ping establishes network reachability, not application health.
+
+Each result includes a UTC `checked_at` timestamp, `duration_ms`, `exit_code`,
+`stdout`, `stderr`, `check_error`, and `output_truncated`. Output is decoded as UTF-8
+text and capped at 64 KiB per stream; the rest is drained and discarded. Execution
+duration is not network latency: ping's packet timings remain in its raw output.
+Script failures are saved just like successful checks. If MySQL is unavailable,
+the application logs the save failure and continues; there is no durable retry queue.
+Stopping the application interrupts the active check without saving a partial result.
+
+The startup schema upgrade preserves existing rows, adds the monitoring columns
+and indexes, and creates the missing `status_message` table for the message board.
+Existing logs retain their original date/time values; their new columns remain null.
+Configured services get a unique `services.monitor_key` based on their YAML ID.
+Legacy service rows without a key are left as they are.
+
+Inspect recent checks in MySQL:
+
+```sql
+SELECT s.name, l.checked_at, l.stats, l.duration_ms, l.exit_code,
+       l.stdout, l.stderr, l.check_error, l.output_truncated
+FROM status_logs l
+JOIN services s ON s.id = l.service_id
+WHERE l.checked_at IS NOT NULL
+ORDER BY l.checked_at DESC
+LIMIT 20;
+```
+
+The public dashboard still displays example data. This version collects results
+only; dashboard integration, admin login, and protected error details are subsequent
+work. Raw script output is not exposed through a web endpoint.

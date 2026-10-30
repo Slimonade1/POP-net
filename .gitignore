@@ -1,6 +1,7 @@
 HELP.md
 target/
 .env
+monitoring.yaml
 /runtime/*
 !/runtime/.gitkeep
 .mvn/wrapper/maven-wrapper.jar

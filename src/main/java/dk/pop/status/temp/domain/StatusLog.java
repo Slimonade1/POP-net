@@ -1,17 +1,17 @@
 package dk.pop.status.temp.domain;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
-
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.Instant;
 
 public record StatusLog(
         Long id,
-        String service_name,
+        String serviceKey,
+        String serviceName,
         String status,
-        LocalTime checkedAtTime,
-        LocalDate checkedAtDate,
-        Integer delay_ms,
-        String message
+        Instant checkedAt,
+        long durationMs,
+        Integer exitCode,
+        String stdout,
+        String stderr,
+        String errorMessage,
+        boolean outputTruncated
 ) { }
