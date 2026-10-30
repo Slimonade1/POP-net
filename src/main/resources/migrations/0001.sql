@@ -26,4 +26,4 @@ INSERT IGNORE INTO services (id, name, description) VALUES
 (15, 'Reset Password Gateway', 'https://k-net.dk'),
 (16, 'Password Manager Config', 'https://pop.dk'),
 (17, 'Password Manager Alive', 'https://pop.dk'),
-(18, 'Netgrp Wiki Knowledgebase', 'https://wiki.pop.dk'),
+(18, 'Netgrp Wiki Knowledgebase', 'https://wiki.pop.dk');

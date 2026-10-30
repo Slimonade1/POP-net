@@ -8,7 +8,6 @@ import dk.pop.status.temp.utils.Log;
 import dk.pop.status.temp.utils.StatusMessageUtils;
 
 import org.slf4j.Logger;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -31,9 +30,7 @@ public class StatusMonitoringService {
     private static final Logger log = Log.getLogger(StatusMonitoringService.class);
 
     private final ServiceEntityRepository serviceRepository;
-    
-    // Injected as an ObjectProvider to handle the custom @RequestScope transaction boundaries safely
-    private final ObjectProvider<StatusLogRepository> statusLogRepositoryProvider;
+    private final StatusLogRepository statusLogRepository;
     
     private final Map<String, String> liveStatuses = new ConcurrentHashMap<>();
     private final Map<String, Integer> liveLatencies = new ConcurrentHashMap<>();
@@ -43,16 +40,16 @@ public class StatusMonitoringService {
             .connectTimeout(Duration.ofSeconds(3))
             .build();
 
-    public StatusMonitoringService(ServiceEntityRepository serviceRepository, ObjectProvider<StatusLogRepository> statusLogRepositoryProvider) {
+    // Standard constructor injection setup
+    public StatusMonitoringService(ServiceEntityRepository serviceRepository, StatusLogRepository statusLogRepository) {
         this.serviceRepository = serviceRepository;
-        this.statusLogRepositoryProvider = statusLogRepositoryProvider;
+        this.statusLogRepository = statusLogRepository;
     }
 
     @Scheduled(fixedDelay = 20000)
     public void monitorInfrastructure() {
         Iterable<ServiceEntity> monitoredServices = serviceRepository.findAll();
         
-        // Universal clean stream row counter mapping across all Java compiler variants
         long taskCount = java.util.stream.StreamSupport.stream(monitoredServices.spliterator(), false).count();
         if (taskCount == 0) return;
 
@@ -111,7 +108,6 @@ public class StatusMonitoringService {
         long startTime = System.nanoTime();
         String cleanHost = targetPath.replace("icmp://", "").replaceAll("/$", "");
         
-        // Safety step for bracketed IPv6 literal addresses
         if (cleanHost.startsWith("[") && cleanHost.endsWith("]")) {
             cleanHost = cleanHost.substring(1, cleanHost.length() - 1);
         }
@@ -149,7 +145,6 @@ public class StatusMonitoringService {
         
         String lastKnownStatus = previousStatuses.get(service.name());
 
-        // State Change Detection Pattern
         if (lastKnownStatus == null || !lastKnownStatus.equalsIgnoreCase(currentStatus)) {
             log.atInfo().log(String.format("STATE CHANGE DETECTED -> Service '%s' shifted to [%s]", service.name(), currentStatus));
 
@@ -162,29 +157,26 @@ public class StatusMonitoringService {
                     : "Status Fault Change Trigger";
             }
 
-            // Maps the dedicated status_log table structure
             StatusLog logRecord = new StatusLog(
                 null,                   
-                service.name(),         // Feeds the Name string for their custom finder lookups
+                service.name(),         
                 currentStatus,          
-                LocalTime.now(),        // time()
-                LocalDate.now(),        // date()
+                LocalTime.now(),        // maps to time
+                LocalDate.now(),        // maps to date
                 sanitizedMessage,       
                 latency                 // delay_ms
             );
 
-            // RELATIONAL LIFECYCLE MANAGED TRANSACTION BLOCK
-            StatusLogRepository repo = statusLogRepositoryProvider.getObject();
             try {
-                repo.begin();               // Opens a clean connection transaction layer
-                repo.create(logRecord);     // Fires prepared statement matrices
-                repo.commit();              // Safely persists modifications to MySQL
+                statusLogRepository.begin();           
+                statusLogRepository.create(logRecord);  
+                statusLogRepository.commit();          
                 previousStatuses.put(service.name(), currentStatus);
             } catch (Exception e) {
-                try { repo.rollback(); } catch (Exception rbEx) { log.atError().log("UnitOfWork Rollback failed: " + rbEx.getMessage()); }
-                throw Log.giveUp(log, e, "Fatal status log data persistence infrastructure fault through UnitOfWork context");
+                try { statusLogRepository.rollback(); } catch (Exception rbEx) { log.atError().log("UnitOfWork Rollback failed: " + rbEx.getMessage()); }
+                throw Log.giveUp(log, e, "Fatal status log data persistence infrastructure fault through Singleton context");
             } finally {
-                try { repo.close(); } catch (Exception clEx) { log.atError().log("UnitOfWork Connection close failed: " + clEx.getMessage()); }
+                try { statusLogRepository.close(); } catch (Exception clEx) { log.atError().log("UnitOfWork Connection close failed: " + clEx.getMessage()); }
             }
         }
     }

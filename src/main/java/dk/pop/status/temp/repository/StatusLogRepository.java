@@ -3,17 +3,16 @@ package dk.pop.status.temp.repository;
 import dk.pop.status.temp.domain.StatusLog;
 import dk.pop.status.temp.utils.UnitOfWork;
 import org.springframework.stereotype.Repository;
-import org.springframework.web.context.annotation.RequestScope;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
 @Repository
-@RequestScope
 public class StatusLogRepository implements UnitOfWork {
     private final DataSource dataSource;
-    private Connection connection;
+
+    private final ThreadLocal<Connection> connectionHolder = new ThreadLocal<>();
 
     public void create(StatusLog statusLog) {
         var findServiceId = "SELECT id FROM services WHERE name = ?";
@@ -37,10 +36,8 @@ public class StatusLogRepository implements UnitOfWork {
                 try (var insertStatement = getConnection().prepareStatement(stmt)) {
                     insertStatement.setLong(1, serviceId);
                     insertStatement.setString(2, statusLog.status());
-                    
                     insertStatement.setTime(3, java.sql.Time.valueOf(statusLog.time()));
                     insertStatement.setDate(4, java.sql.Date.valueOf(statusLog.date()));
-                    
                     insertStatement.setString(5, statusLog.message());
                     insertStatement.setInt(6, statusLog.delay_ms());
 
@@ -53,10 +50,11 @@ public class StatusLogRepository implements UnitOfWork {
     }
 
     private Connection getConnection() {
-        if (connection == null) {
+        Connection conn = connectionHolder.get();
+        if (conn == null) {
             throw new RuntimeException("Connection not opened");
         }
-        return connection;
+        return conn;
     }
 
     public StatusLogRepository(DataSource dataSource) {
@@ -66,8 +64,9 @@ public class StatusLogRepository implements UnitOfWork {
     @Override
     public UnitOfWork begin() throws UnitOfWorkException {
         try {
-            connection = dataSource.getConnection();
-            connection.setAutoCommit(false);
+            Connection conn = dataSource.getConnection();
+            conn.setAutoCommit(false);
+            connectionHolder.set(conn);
             return this;
         } catch (SQLException e) {
             throw new UnitOfWorkException("Failed to begin transaction", e);
@@ -77,7 +76,8 @@ public class StatusLogRepository implements UnitOfWork {
     @Override
     public void commit() throws UnitOfWorkException {
         try {
-            connection.commit();
+            Connection conn = connectionHolder.get();
+            if (conn != null) conn.commit();
         } catch (SQLException e) {
             throw new UnitOfWorkException("Failed to commit transaction", e);
         }
@@ -86,9 +86,8 @@ public class StatusLogRepository implements UnitOfWork {
     @Override
     public void rollback() throws UnitOfWorkException {
         try {
-            if (connection != null) {
-                connection.rollback();
-            }
+            Connection conn = connectionHolder.get();
+            if (conn != null) conn.rollback();
         } catch (SQLException e) {
             throw new UnitOfWorkException("Failed to roll back transaction", e);
         }
@@ -97,9 +96,10 @@ public class StatusLogRepository implements UnitOfWork {
     @Override
     public void close() throws UnitOfWorkException {
         try {
-            if (connection != null) {
-                connection.close();
-                connection = null;
+            Connection conn = connectionHolder.get();
+            if (conn != null) {
+                conn.close();
+                connectionHolder.remove();
             }
         } catch (SQLException e) {
             throw new UnitOfWorkException("Failed to close connection", e);
