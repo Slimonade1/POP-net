@@ -10,3 +10,52 @@ spring:
       mode: always
       schema-locations: classpath:migrations/*.sql
 example-data: ${EXAMPLE_DATA:true}
+
+# Deprecated as moved to SQL database
+#app:
+#  monitoring:
+#    targets:
+#    # Current known targets
+#      # Nwtwork Infrastructure
+#        # Management VPN
+#      - "icmp://10.255.0.1"
+#      - "icmp://10.255.0.3"
+#      - "icmp://177.28.242.91"
+#      # Servers
+#        # Jane
+#      - "icmp://jane.pop.dk"
+#        # John
+#      - "icmp://john.pop.dk"
+#      - "icmp://82.211.200.8"
+#      - "icmp://[2a03:19c0:8005:6000:1]"
+#      # Web Services
+#        # POP Booking
+#      - "https://book.pop.dk/api/heartbeat"
+#        # POP Website
+#      - "https://pop.dk"
+#      - "https://pop.dk/wp-login.php"
+#      - "https://www.pop.dk"
+#        # Network Monitor Service
+#      - "https://nms.pop.dk"
+#        # POP Print
+#      - "https://print.pop.dk/login"
+#        # Self-service Redirection
+#      - "https://self-service.pop.dk"
+#        # Reset Password
+#      - "https://reset.k-net.dk/heartbeat"
+#        # Netgrp Password Manager
+#      - "https://pass.pop.dk/api/config"
+#      - "https://pass.pop.dk/alive"
+#        # Netgrp Wiki
+#      - "https://wiki.pop.dk"
+#
+#
+#    # test targets
+#        # Google DNS (Should report ONLINE)
+#      - "8.8.8.8"
+#        # Cloudflare DNS (Should report ONLINE)                    
+#      - "1.1.1.1"
+#        # Fake server (Should trigger DEAD: DNS Resolve Error)
+#      - "this-server-does-not-exist.pop"
+#        # Documentation IP (Should trigger DEAD: Packet Loss / Timeout) 
+#      - "192.0.2.1"
