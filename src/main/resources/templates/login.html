@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Admin login, POP status')}"></head>
+<body>
+<main class="auth">
+    <img class="brand__logo auth__logo" src="https://raw.githubusercontent.com/netgrp/logo/main/pop-opti-nofont.svg"
+         alt="POP Kollegiet" width="56" height="28">
+    <h1 class="auth__title">Admin login</h1>
+    <p class="auth__lede">For the network group at POP.</p>
+
+    <p class="alert status--down" th:if="${param.error}" role="alert"><svg
+            th:replace="~{fragments/icons :: icon('circle-x')}"></svg>Wrong username or password.</p>
+    <p class="alert" th:if="${param.logout}" role="status">You are logged out.</p>
+
+    <form class="field-stack" method="post" th:action="@{/login}">
+        <label class="field">
+            <span class="field__label">Username</span>
+            <input class="input" name="username" type="text" autocomplete="username" required autofocus>
+        </label>
+        <label class="field">
+            <span class="field__label">Password</span>
+            <input class="input" name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="button button--primary button--block" type="submit">Log in</button>
+    </form>
+
+    <a class="auth__back" th:href="@{/}"><svg th:replace="~{fragments/icons :: icon('arrow-left')}"></svg>Back to the status page</a>
+</main>
+</body>
+</html>

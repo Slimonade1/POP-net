@@ -8,6 +8,7 @@ import dk.pop.status.temp.utils.Log;
 import dk.pop.status.temp.utils.StatusMessageUtils;
 
 import org.slf4j.Logger;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +31,9 @@ public class StatusMonitoringService {
     private static final Logger log = Log.getLogger(StatusMonitoringService.class);
 
     private final ServiceEntityRepository serviceRepository;
-    private final StatusLogRepository statusLogRepository;
+    
+    // Injected as an ObjectProvider to handle the custom @RequestScope transaction boundaries safely
+    private final ObjectProvider<StatusLogRepository> statusLogRepositoryProvider;
     
     private final Map<String, String> liveStatuses = new ConcurrentHashMap<>();
     private final Map<String, Integer> liveLatencies = new ConcurrentHashMap<>();
@@ -40,23 +43,21 @@ public class StatusMonitoringService {
             .connectTimeout(Duration.ofSeconds(3))
             .build();
 
-    public StatusMonitoringService(ServiceEntityRepository serviceRepository, StatusLogRepository statusLogRepository) {
+    public StatusMonitoringService(ServiceEntityRepository serviceRepository, ObjectProvider<StatusLogRepository> statusLogRepositoryProvider) {
         this.serviceRepository = serviceRepository;
-        this.statusLogRepository = statusLogRepository;
+        this.statusLogRepositoryProvider = statusLogRepositoryProvider;
     }
 
-    @SuppressWarnings("unused")
     @Scheduled(fixedDelay = 20000)
     public void monitorInfrastructure() {
         Iterable<ServiceEntity> monitoredServices = serviceRepository.findAll();
         
-        int taskCount = 0;
-        for (ServiceEntity ignored : monitoredServices) taskCount++;
+        // Universal clean stream row counter mapping across all Java compiler variants
+        long taskCount = java.util.stream.StreamSupport.stream(monitoredServices.spliterator(), false).count();
         if (taskCount == 0) return;
 
-
         boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-        ExecutorService executor = Executors.newFixedThreadPool(Math.min(taskCount, 15));
+        ExecutorService executor = Executors.newFixedThreadPool(Math.min((int) taskCount, 15));
 
         for (ServiceEntity service : monitoredServices) {
             String targetPath = service.description(); 
@@ -110,6 +111,11 @@ public class StatusMonitoringService {
         long startTime = System.nanoTime();
         String cleanHost = targetPath.replace("icmp://", "").replaceAll("/$", "");
         
+        // Safety step for bracketed IPv6 literal addresses
+        if (cleanHost.startsWith("[") && cleanHost.endsWith("]")) {
+            cleanHost = cleanHost.substring(1, cleanHost.length() - 1);
+        }
+
         String currentStatus;
         String diagnosticMessage;
 
@@ -143,7 +149,7 @@ public class StatusMonitoringService {
         
         String lastKnownStatus = previousStatuses.get(service.name());
 
-        // State Change Detection Pattern: Only writes to database on state alterations
+        // State Change Detection Pattern
         if (lastKnownStatus == null || !lastKnownStatus.equalsIgnoreCase(currentStatus)) {
             log.atInfo().log(String.format("STATE CHANGE DETECTED -> Service '%s' shifted to [%s]", service.name(), currentStatus));
 
@@ -156,22 +162,29 @@ public class StatusMonitoringService {
                     : "Status Fault Change Trigger";
             }
 
-            // Instantiates the dedicated status_log table structure
+            // Maps the dedicated status_log table structure
             StatusLog logRecord = new StatusLog(
-                null,                   // Database automatically handles the auto-increment ID
-                service.id(),               // Links directly to your services mapping table
-                currentStatus,              // "healthy", "sick", or "down"
-                LocalTime.now(),            // Hour, minute, second breakdown
-                LocalDate.now(),            // Split year-month-day calendar tracking
-                sanitizedMessage,           // Trimmed troubleshooting statement
-                latency                     // Pinpoint response time tracking metrics
+                null,                   
+                service.name(),         // Feeds the Name string for their custom finder lookups
+                currentStatus,          
+                LocalTime.now(),        // time()
+                LocalDate.now(),        // date()
+                sanitizedMessage,       
+                latency                 // delay_ms
             );
 
+            // RELATIONAL LIFECYCLE MANAGED TRANSACTION BLOCK
+            StatusLogRepository repo = statusLogRepositoryProvider.getObject();
             try {
-                statusLogRepository.save(logRecord);
+                repo.begin();               // Opens a clean connection transaction layer
+                repo.create(logRecord);     // Fires prepared statement matrices
+                repo.commit();              // Safely persists modifications to MySQL
                 previousStatuses.put(service.name(), currentStatus);
             } catch (Exception e) {
-                throw Log.giveUp(log, e, "Fatal status log data persistence infrastructure fault");
+                try { repo.rollback(); } catch (Exception rbEx) { log.atError().log("UnitOfWork Rollback failed: " + rbEx.getMessage()); }
+                throw Log.giveUp(log, e, "Fatal status log data persistence infrastructure fault through UnitOfWork context");
+            } finally {
+                try { repo.close(); } catch (Exception clEx) { log.atError().log("UnitOfWork Connection close failed: " + clEx.getMessage()); }
             }
         }
     }

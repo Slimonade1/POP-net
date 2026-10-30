@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Admin, POP status')}"></head>
+<body>
+<div class="page">
+    <header th:replace="~{fragments/layout :: adminHeader('overview')}"></header>
+
+    <main class="admin">
+        <h1 class="admin__title">Overview</h1>
+        <p class="lede">Logged in as <strong th:text="${username}">admin</strong>. This is what visitors see at the top of the status page.</p>
+
+        <section class="admin-section" aria-labelledby="live-title">
+            <div class="admin-section__head">
+                <h2 id="live-title" class="section-title">Announcements showing</h2>
+                <a class="button button--ghost button--small" th:href="@{/messages}">Manage</a>
+            </div>
+            <p class="empty" th:if="${#lists.isEmpty(notices)}">No announcements are showing. Visitors only see the service status.</p>
+            <div class="notices" th:unless="${#lists.isEmpty(notices)}">
+                <p class="notice" th:each="notice : ${notices}"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span th:text="${notice.message}">Planned maintenance tonight.</span></p>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

@@ -68,8 +68,41 @@ docker compose up -d --wait
 ./mvnw spring-boot:run
 ```
 
-Open `http://localhost:8080`. Messages can be added and deleted from the home
-page. The MySQL service stores its data in a Docker volume named `mysql-data`.
+Open `http://localhost:8080`. If port 8080 is already taken, the app starts on
+the next free port (8081, 8082, ...) and says so in the log. Set `SERVER_PORT`
+to start from a different port.
+
+The home page is the public status page, and every service has its own page
+at `http://localhost:8080/services/<name>`, for example `/services/pop-print`.
+Both are Thymeleaf templates filled from example data in the
+`dk.pop.status.temp.view.example` package, which makes up two weeks of
+incidents per service. Real data replaces that package later.
+
+### Turn the example data on or off
+
+The example data is on by default. To turn it off, put the line
+`EXAMPLE_DATA=false` in `.env` and restart the app. New `.env` files already
+have it, commented out with `#`, so removing the `#` is enough. The pages then
+show no services. Put the `#` back to turn the example data on again.
+
+For a single run without editing `.env`:
+
+```sh
+EXAMPLE_DATA=false ./run.sh
+```
+
+In IntelliJ, add `EXAMPLE_DATA` with the value `false` to the environment
+variables of **TempApplication**, next to `DB_PASSWORD`.
+
+Icons come from [Lucide](https://lucide.dev) (ISC license, see
+`THIRD_PARTY_NOTICES.md`) and live in
+`src/main/resources/templates/fragments/icons.html`. To add one, copy its paths
+from lucide.dev into a new `th:case` there, then use it with
+`<svg th:replace="~{fragments/icons :: icon('name')}"></svg>`.
+
+Announcements are posted and deleted at `http://localhost:8080/messages` and
+show on the home page. The MySQL service stores its data in a Docker volume
+named `mysql-data`.
 To stop the service without deleting its data, run `docker compose down`.
 To delete the database and all its messages and initialize it again with new
 passwords, run `docker compose down --volumes`.

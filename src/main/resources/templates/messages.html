@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Announcements, POP status')}"></head>
+<body>
+<div class="page">
+    <header th:replace="~{fragments/layout :: adminHeader('announcements')}"></header>
+
+    <main class="admin">
+        <h1 class="admin__title">Announcements</h1>
+        <p class="lede">Announcements show at the top of the status page until you delete them.</p>
+
+        <form class="compose" method="post" th:action="@{/messages}">
+            <label class="field__label" for="message">New announcement</label>
+            <textarea class="input" id="message" name="message" rows="3" maxlength="200" required
+                      placeholder="Example: Printing in the basement is down until Friday."></textarea>
+            <p class="alert status--down" th:if="${error}" role="alert"><svg
+                    th:replace="~{fragments/icons :: icon('circle-x')}"></svg><span th:text="${error}">Too long.</span></p>
+            <div class="compose__foot">
+                <span class="compose__count" data-count-for="message" aria-live="polite">0 / 200</span>
+                <button class="button button--primary" type="submit">Post announcement</button>
+            </div>
+        </form>
+
+        <section class="admin-section" aria-labelledby="posted-title">
+            <h2 id="posted-title" class="section-title">Showing now
+                <span class="count" th:text="${#lists.size(messages)}">1</span></h2>
+            <p class="empty" th:if="${#lists.isEmpty(messages)}">Nothing posted. The status page shows no announcements.</p>
+            <ul class="posted" th:unless="${#lists.isEmpty(messages)}">
+                <li class="notice" th:each="message : ${messages}">
+                    <svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg>
+                    <span class="posted__text" th:text="${message.message}"></span>
+                    <form method="post" th:action="@{/messages/delete}" data-confirm="Delete this announcement? It disappears from the status page right away.">
+                        <input type="hidden" name="id" th:value="${message.id}">
+                        <button class="button button--ghost button--small button--danger" type="submit">Delete</button>
+                    </form>
+                </li>
+            </ul>
+        </section>
+    </main>
+</div>
+<script th:src="@{/js/admin.js}" defer></script>
+</body>
+</html>
