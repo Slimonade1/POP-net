@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Retry thresholds, POP status')}"></head>
+<body>
+<div class="page">
+    <header th:replace="~{fragments/layout :: adminHeader('thresholds')}"></header>
+
+    <main class="admin">
+        <h1 class="admin__title">Retry thresholds</h1>
+        <p class="lede">A service is reported as down after this many consecutive failed health checks.</p>
+        <p class="alert status--down" th:if="${error}" role="alert" th:text="${error}"></p>
+
+        <ul class="thresholds">
+            <li class="threshold" th:each="service : ${services}">
+                <span class="threshold__name" th:text="${service.name}">POP Main Website</span>
+                <form class="threshold__form" method="post" th:action="@{/admin/services/retry-threshold}">
+                    <input type="hidden" name="id" th:value="${service.id}">
+                    <label class="visually-hidden" th:for="${'retry-' + service.id}"
+                           th:text="${'Retry threshold for ' + service.name}">Retry threshold</label>
+                    <input class="input threshold__input" type="number" min="1" required
+                           th:id="${'retry-' + service.id}" name="retryThreshold"
+                           th:value="${service.retryThreshold}">
+                    <button class="button button--primary button--small" type="submit">Save</button>
+                </form>
+            </li>
+        </ul>
+    </main>
+</div>
+</body>
+</html>

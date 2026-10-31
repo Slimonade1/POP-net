@@ -1,7 +1,8 @@
 CREATE TABLE IF NOT EXISTS services (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255),
-    description VARCHAR(511)
+    description VARCHAR(511),
+    retry_threshold INT NOT NULL DEFAULT 3
 );
 
 -- You guys forgot this
