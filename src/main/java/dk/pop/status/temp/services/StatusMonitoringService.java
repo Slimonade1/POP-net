@@ -31,6 +31,7 @@ public class StatusMonitoringService {
 
     private final ServiceEntityRepository serviceRepository;
     private final StatusLogRepository statusLogRepository;
+    private final HealthStatusTracker healthStatusTracker;
     
     private final Map<String, String> liveStatuses = new ConcurrentHashMap<>();
     private final Map<String, Integer> liveLatencies = new ConcurrentHashMap<>();
@@ -41,9 +42,13 @@ public class StatusMonitoringService {
             .build();
 
     // Standard constructor injection setup
-    public StatusMonitoringService(ServiceEntityRepository serviceRepository, StatusLogRepository statusLogRepository) {
+    public StatusMonitoringService(
+            ServiceEntityRepository serviceRepository,
+            StatusLogRepository statusLogRepository,
+            HealthStatusTracker healthStatusTracker) {
         this.serviceRepository = serviceRepository;
         this.statusLogRepository = statusLogRepository;
+        this.healthStatusTracker = healthStatusTracker;
     }
 
     @Scheduled(fixedDelay = 20000)
@@ -77,7 +82,7 @@ public class StatusMonitoringService {
 
     private void checkHttp(ServiceEntity service, String url) {
         long startTime = System.nanoTime();
-        String currentStatus;
+        boolean healthy;
         String diagnosticMessage;
 
         try {
@@ -86,22 +91,22 @@ public class StatusMonitoringService {
             int statusCode = response.statusCode();
 
             if (statusCode >= 200 && statusCode < 400) {
-                currentStatus = "healthy";
+                healthy = true;
                 diagnosticMessage = "HTTP " + statusCode + " OK";
             } else {
-                currentStatus = "down";
+                healthy = false;
                 diagnosticMessage = "HTTP Fault: " + statusCode;
             }
         } catch (java.net.http.HttpConnectTimeoutException e) {
-            currentStatus = "sick";
+            healthy = false;
             diagnosticMessage = "Timeout Overload";
         } catch (Exception e) {
-            currentStatus = "down";
+            healthy = false;
             diagnosticMessage = e.getMessage() != null ? e.getMessage() : "Connection Fault";
         }
 
         int durationMs = (int) ((System.nanoTime() - startTime) / 1_000_000);
-        saveLogEntry(service, currentStatus, diagnosticMessage, durationMs);
+        saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage, durationMs);
     }
 
     private void checkIcmp(ServiceEntity service, String targetPath, boolean isWindows) {
@@ -112,7 +117,7 @@ public class StatusMonitoringService {
             cleanHost = cleanHost.substring(1, cleanHost.length() - 1);
         }
 
-        String currentStatus;
+        boolean healthy;
         String diagnosticMessage;
 
         try {
@@ -124,19 +129,19 @@ public class StatusMonitoringService {
             int exitCode = process.waitFor();
 
             if (exitCode == 0) {
-                currentStatus = "healthy";
+                healthy = true;
                 diagnosticMessage = "ICMP Alive Check Success";
             } else {
-                currentStatus = "down";
+                healthy = false;
                 diagnosticMessage = "Packet Loss Timeout Drop";
             }
         } catch (Exception e) {
-            currentStatus = "down";
+            healthy = false;
             diagnosticMessage = e.getMessage() != null ? e.getMessage() : "Runtime Drop";
         }
 
         int durationMs = (int) ((System.nanoTime() - startTime) / 1_000_000);
-        saveLogEntry(service, currentStatus, diagnosticMessage, durationMs);
+        saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage, durationMs);
     }
 
     private void saveLogEntry(ServiceEntity service, String currentStatus, String msg, int latency) {

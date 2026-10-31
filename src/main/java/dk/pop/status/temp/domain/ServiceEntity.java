@@ -7,5 +7,6 @@ import org.springframework.data.relational.core.mapping.Table;
 public record ServiceEntity(
     @Id Long id,
     String name,
-    String description
+    String description,
+    int retryThreshold
 ) {}

@@ -38,6 +38,7 @@
     <nav class="admin-nav" aria-label="Admin">
         <a th:href="@{/admin}" th:attr="aria-current=${active == 'overview' ? 'page' : null}">Overview</a>
         <a th:href="@{/messages}" th:attr="aria-current=${active == 'announcements' ? 'page' : null}">Announcements</a>
+        <a th:href="@{/retry-thresholds}" th:attr="aria-current=${active == 'thresholds' ? 'page' : null}">Retry thresholds</a>
         <a class="admin-nav__out" th:href="@{/}">Status page<svg th:replace="~{fragments/icons :: icon('arrow-up-right')}"></svg></a>
     </nav>
 </div>
