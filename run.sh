@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Start MySQL in a container, then run the app. Creates .env on first run and
-# offers to install or start whatever is missing.
+# Start MySQL and Keycloak in containers, then run the app. Creates .env on
+# first run and offers to install or start whatever is missing.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -119,6 +119,7 @@ if [[ ! -f .env ]]; then
     gen() { head -c 18 /dev/urandom | base64 | tr -d '/+='; }
     sed -e "s/^DB_PASSWORD=.*/DB_PASSWORD=$(gen)/" \
         -e "s/^MYSQL_ROOT_PASSWORD=.*/MYSQL_ROOT_PASSWORD=$(gen)/" \
+        -e "s/^KEYCLOAK_ADMIN_PASSWORD=.*/KEYCLOAK_ADMIN_PASSWORD=$(gen)/" \
         .env.example > .env
     ok "Created .env with random passwords"
 else
@@ -128,24 +129,28 @@ set -a
 source .env
 set +a
 
-step "Starting MySQL on port 3307 and waiting until it is healthy"
-"${compose[@]}" up -d --wait || fail "MySQL did not start." \
+step "Starting MySQL and Keycloak on ports 3307 and 8180"
+"${compose[@]}" up -d --wait || fail "Local services did not start." \
     "See its log:  ${compose[*]} logs mysql" \
+    "See Keycloak's log:  ${compose[*]} logs keycloak" \
     "If the password changed since the volume was created, reset it with:" \
     "  ${compose[*]} down --volumes"
-ok "MySQL is up"
+ok "MySQL and Keycloak are healthy"
 
-# Use 8080 unless something else already listens there.
+# Keycloak's local client is registered with a redirect URI on port 8080.
 port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
 port=${SERVER_PORT:-8080}
+if [[ "$port" != 8080 ]]; then
+    fail "Local Keycloak is configured for the app on port 8080." \
+        "Use SERVER_PORT=8080 or update the Keycloak redirect URI first."
+fi
 if port_busy "$port"; then
-    taken=$port
-    while port_busy "$port"; do port=$((port + 1)); done
-    ok "Port $taken is in use, using $port instead"
+    fail "Port 8080 is already in use." \
+        "Stop the other service, then run this script again."
 fi
 export SERVER_PORT=$port
 
 step "Starting the app at ${bold}http://localhost:$port${reset}"
 echo "     The first run downloads dependencies, which takes a minute. Stop with Ctrl+C."
-echo "     MySQL keeps running afterwards; stop it with: ${compose[*]} down"
+echo "     MySQL and Keycloak keep running afterwards; stop them with: ${compose[*]} down"
 exec ./mvnw --no-transfer-progress spring-boot:run

@@ -1,6 +1,24 @@
 spring:
   application:
     name: pop-net
+  security:
+    oauth2:
+      client:
+        # Local Keycloak registration; replace secret and issuer through environment variables in deployment.
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: ${OIDC_CLIENT_ID:popnet-web}
+            client-secret: ${OIDC_CLIENT_SECRET:local-popnet-client-secret}
+            client-authentication-method: client_secret_basic
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid, groups
+        provider:
+          keycloak:
+            # Spring discovers the authorization, token, and key endpoints from this issuer.
+            issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/popnet}
+            user-name-attribute: preferred_username
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3307/popnet}
     username: ${DB_USERNAME:popnet}
