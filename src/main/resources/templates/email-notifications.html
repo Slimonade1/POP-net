@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Email notifications, POP status')}"></head>
+<body>
+<div class="page">
+    <header th:replace="~{fragments/layout :: adminHeader('email-notifications')}"></header>
+
+    <main class="admin">
+        <h1 class="admin__title">Email notifications</h1>
+        <p class="lede">Receive an email when a service changes status.</p>
+        <p class="alert status--down" th:if="${error}" role="alert" th:text="${error}"></p>
+
+        <form class="email-recipient-form" method="post" th:action="@{/admin/email-notifications}">
+            <label for="email">Add email address</label>
+            <div class="email-recipient-form__controls">
+                <input class="input" id="email" name="email" type="email" required
+                       placeholder="name@example.com">
+                <button class="button button--primary" type="submit">Add</button>
+            </div>
+        </form>
+
+        <h2 class="section-title">Recipients</h2>
+        <p class="empty" th:if="${#lists.isEmpty(recipients)}">No email recipients configured.</p>
+        <ul class="email-recipients" th:unless="${#lists.isEmpty(recipients)}">
+            <li class="email-recipient" th:each="recipient : ${recipients}">
+                <span th:text="${recipient.email}">name@example.com</span>
+                <form method="post" th:action="@{/admin/email-notifications/delete}">
+                    <input type="hidden" name="id" th:value="${recipient.id}">
+                    <button class="button button--ghost button--small button--danger" type="submit">Remove</button>
+                </form>
+            </li>
+        </ul>
+    </main>
+</div>
+</body>
+</html>

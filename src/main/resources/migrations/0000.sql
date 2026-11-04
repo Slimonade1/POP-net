@@ -28,3 +28,8 @@ CREATE TABLE IF NOT EXISTS status_notes (
     service_id BIGINT NOT NULL,
     FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS email_recipients (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(320) NOT NULL UNIQUE
+);

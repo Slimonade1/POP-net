@@ -148,6 +148,52 @@ a {
     color: var(--down-text);
 }
 
+.email-recipient-form {
+    max-width: var(--measure);
+    margin: 2rem 0;
+}
+
+.email-recipient-form label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+}
+
+.email-recipient-form__controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.input {
+    min-width: 0;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--divider);
+    border-radius: 6px;
+    background: var(--paper);
+    color: var(--ink);
+    font: inherit;
+}
+
+.email-recipient-form__controls .input {
+    flex: 1;
+}
+
+.email-recipients {
+    max-width: var(--measure);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.email-recipient {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--rule);
+}
+
 .site-header {
     display: flex;
     align-items: center;

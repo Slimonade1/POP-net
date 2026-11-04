@@ -32,6 +32,7 @@ public class StatusMonitoringService {
     private final ServiceEntityRepository serviceRepository;
     private final StatusLogRepository statusLogRepository;
     private final HealthStatusTracker healthStatusTracker;
+    private final EmailNotificationService emailNotificationService;
     
     private final Map<String, String> liveStatuses = new ConcurrentHashMap<>();
     private final Map<String, Integer> liveLatencies = new ConcurrentHashMap<>();
@@ -45,10 +46,12 @@ public class StatusMonitoringService {
     public StatusMonitoringService(
             ServiceEntityRepository serviceRepository,
             StatusLogRepository statusLogRepository,
-            HealthStatusTracker healthStatusTracker) {
+            HealthStatusTracker healthStatusTracker,
+            EmailNotificationService emailNotificationService) {
         this.serviceRepository = serviceRepository;
         this.statusLogRepository = statusLogRepository;
         this.healthStatusTracker = healthStatusTracker;
+        this.emailNotificationService = emailNotificationService;
     }
 
     @Scheduled(fixedDelay = 20000)
@@ -177,6 +180,11 @@ public class StatusMonitoringService {
                 statusLogRepository.create(logRecord);  
                 statusLogRepository.commit();          
                 previousStatuses.put(service.name(), currentStatus);
+
+                if (lastKnownStatus != null) {
+                    emailNotificationService.notifyStatusChange(
+                            service.name(), lastKnownStatus, currentStatus, sanitizedMessage);
+                }
             } catch (Exception e) {
                 try { statusLogRepository.rollback(); } catch (Exception rbEx) { log.atError().log("UnitOfWork Rollback failed: " + rbEx.getMessage()); }
                 throw Log.giveUp(log, e, "Fatal status log data persistence infrastructure fault through Singleton context");

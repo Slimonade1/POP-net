@@ -112,6 +112,13 @@ as user `popnet`. Override `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` through
 environment variables to connect to a different MySQL server. The schema script
 in `src/main/resources/migrations` runs when the application starts.
 
+Status changes can send emails to the recipients configured under the
+**Email notifications** tab in the admin UI. Add the SMTP account that should
+send notifications to `.env` as `SMTP_USERNAME`, and its SMTP credential as
+`SMTP_PASSWORD`. Configure `SMTP_HOST` and `SMTP_PORT` for the chosen provider.
+The sender account is separate from the recipients managed in the admin UI.
+Use `EMAIL_NOTIFICATIONS_ENABLED=false` to disable notifications.
+
 Application code is organized into `domain`, `repository`, `services`, `utils`,
 and `view` packages. Thymeleaf templates live in
 `src/main/resources/templates`.
