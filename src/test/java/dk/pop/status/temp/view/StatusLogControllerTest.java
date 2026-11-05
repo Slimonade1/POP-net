@@ -127,6 +127,43 @@ class StatusLogControllerTest {
     }
 
     @Test
+    void invalidServiceIdReturnsBadRequest() throws Exception {
+        mvc.perform(get("/admin/services/not-a-number").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(services, logs);
+    }
+
+    @Test
+    void recoveredServiceShowsHealthyStatusAndKeepsFailureInHistory() throws Exception {
+        var recovery = new StatusLog(21L, service.name(), "healthy",
+                LocalTime.of(11, 0), failure.date(), "HTTP 200 OK", 80);
+        given(services.findById(7L)).willReturn(Optional.of(service));
+        given(logs.findRecentByServiceId(7L)).willReturn(List.of(recovery, failure));
+
+        mvc.perform(get("/admin/services/7").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("latestLog", recovery))
+                .andExpect(model().attribute("history", List.of(recovery, failure)))
+                .andExpect(content().string(containsString(">healthy</dd>")))
+                .andExpect(content().string(containsString("HTTP 200 OK")))
+                .andExpect(content().string(containsString("HTTP Fault: 503")));
+    }
+
+    @Test
+    void zeroDurationIsDisplayedAsZeroInsteadOfMissing() throws Exception {
+        var quickCheck = new StatusLog(21L, service.name(), "healthy",
+                LocalTime.of(11, 0), failure.date(), "HTTP 200 OK", 0);
+        given(services.findById(7L)).willReturn(Optional.of(service));
+        given(logs.findRecentByServiceId(7L)).willReturn(List.of(quickCheck));
+
+        mvc.perform(get("/admin/services/7").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("0 ms")))
+                .andExpect(content().string(not(containsString("Not recorded"))));
+    }
+
+    @Test
     void missingDiagnosticFieldsRenderFallbacks() throws Exception {
         given(services.findById(7L)).willReturn(Optional.of(service));
         given(logs.findRecentByServiceId(7L)).willReturn(List.of(
