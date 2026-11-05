@@ -14,11 +14,26 @@ Edit `.env` and set `DB_PASSWORD` and `MYSQL_ROOT_PASSWORD`. Keep `.env` private
 it is ignored by Git. If the MySQL volume already exists, `DB_PASSWORD` must
 match the password used when that volume was first initialized.
 
+The local Docker setup also starts Keycloak as the OIDC identity provider.
+Set (or add) `KEYCLOAK_ADMIN_PASSWORD` in `.env` before starting it if you want
+to use the Keycloak admin console at `http://localhost:8180`. The imported
+local realm has an application account `admin` with password `admin`; sign in
+at the application's `/login` page and choose **Log in with POP identity**. This
+account and the client secret in the imported realm are for local development
+only, not production.
+
+The app must be available at `http://localhost:8080` for the local Keycloak
+client's redirect URI. Make sure that port is free before starting the app.
+The local admin permission is granted to members of the `popnet-admins` group;
+the imported `admin` account is in that group. For another account, add a user
+to the group in the Keycloak admin console.
+
 ### Run from IntelliJ IDEA
 
-Start the database using the **Start MySQL** Docker Compose run configuration.
-It reads the passwords from `.env`. If IntelliJ asks, configure its Docker
-connection first and wait for the MySQL container to become healthy.
+Start the services using the **Start MySQL** Docker Compose run configuration.
+It reads the passwords from `.env` and now starts both MySQL and Keycloak. If
+IntelliJ asks, configure its Docker connection first and wait for both
+containers to become healthy.
 
 The application run configuration must also receive the application password:
 
@@ -38,7 +53,8 @@ $env:MYSQL_ROOT_PASSWORD = "the-same-value-as-in-.env"
 docker compose up -d --wait
 ```
 
-Keep `DB_PASSWORD` set in that window while starting the application:
+Keep `DB_PASSWORD` set in that window while starting the application. Start the
+app after both MySQL and Keycloak are healthy:
 
 ```powershell
 .\mvnw.cmd spring-boot:run
@@ -55,9 +71,9 @@ One command does it all:
 It checks for Java 21 and Docker. If either is missing or Docker is not
 running, it asks before installing or starting it with `sudo`. On the first
 run it copies `.env.example` to `.env` with random passwords. Then it starts
-MySQL, waits until the database is healthy, and runs the app on port 8080, or
-the next free port if 8080 is taken. Stop the app with Ctrl+C; MySQL keeps
-running in the background until you run `docker compose down`.
+MySQL and Keycloak and waits until both are healthy. It requires port 8080 for
+the app's registered OIDC redirect URI. Stop the app with Ctrl+C; MySQL and
+Keycloak keep running in the background until you run `docker compose down`.
 
 To do the same steps by hand:
 
@@ -68,9 +84,8 @@ docker compose up -d --wait
 ./mvnw spring-boot:run
 ```
 
-Open `http://localhost:8080`. If port 8080 is already taken, the app starts on
-the next free port (8081, 8082, ...) and says so in the log. Set `SERVER_PORT`
-to start from a different port.
+Open `http://localhost:8080`. Port 8080 must be free for local OIDC login; if
+it is occupied, stop the other service before running the app.
 
 The home page is the public status page, and every service has its own page
 at `http://localhost:8080/services/<name>`, for example `/services/pop-print`.
