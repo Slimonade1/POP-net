@@ -7,6 +7,24 @@
     <main class="admin">
         <p><a th:href="@{/admin/services}">All service diagnostics</a></p>
         <h1 th:text="${service.name}">Service name</h1>
+        <section>
+            <h2>Public outage note</h2>
+            <p>This note is visible to everyone on the front page and the service's public page. It stays visible until you edit or remove it, including after recovery.</p>
+            <p><a th:href="@{/services/id/{id}(id=${service.id})}">View public service page</a></p>
+            <p th:if="${noteSuccess}" role="status" th:text="${noteSuccess}"></p>
+            <p th:if="${noteError}" role="alert" th:text="${noteError}"></p>
+            <form method="post" th:action="@{/admin/services/{id}/note(id=${service.id})}">
+                <label for="public-note">Explain the outage to visitors</label>
+                <p><textarea id="public-note" name="description" rows="5" cols="50" required
+                             th:maxlength="${noteMaxLength}" th:text="${noteText}"></textarea></p>
+                <p th:text="${'Maximum ' + noteMaxLength + ' characters.'}"></p>
+                <button type="submit">Save public note</button>
+            </form>
+            <form th:if="${hasNote}" method="post" th:action="@{/admin/services/{id}/note/delete(id=${service.id})}">
+                <button type="submit">Remove public note</button>
+            </form>
+        </section>
+        <h2>Admin diagnostics</h2>
         <dl>
             <dt>Monitoring target</dt>
             <dd th:text="${#strings.isEmpty(service.description) ? 'Not configured' : service.description}">https://example.test</dd>

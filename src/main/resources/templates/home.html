@@ -6,7 +6,17 @@
     <header th:replace="~{fragments/layout :: header}"></header>
 
     <main>
-        <section class="answer" th:classappend="${'status--' + overall.css()}" aria-live="polite">
+        <section class="panel" aria-labelledby="service-updates-title">
+            <h2 id="service-updates-title" class="section-title">Service updates</h2>
+            <p class="empty" th:if="${#lists.isEmpty(serviceUpdates)}">No service updates have been published.</p>
+            <article th:each="update : ${serviceUpdates}">
+                <h3><a th:href="@{/services/id/{id}(id=${update.id})}" th:text="${update.name}">Service name</a></h3>
+                <p class="public-note" th:text="${update.note}">We are investigating the outage.</p>
+            </article>
+        </section>
+
+        <section class="answer" th:unless="${#lists.isEmpty(groups)}" th:classappend="${'status--' + overall.css()}" aria-live="polite">
+            <p class="answer__meta">Example status preview: the status and incident history below use demonstration data.</p>
             <h1 class="answer__headline" th:text="${headline}">Everything is working.</h1>
             <p class="answer__meta">Checked at <time th:text="${checkedAt}">13:00</time>.</p>
             <ul class="problems" th:unless="${#lists.isEmpty(problems)}">
@@ -28,7 +38,7 @@
             <p class="notice" th:each="notice : ${notices}"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span th:text="${notice.message}">Planned maintenance tonight.</span></p>
         </section>
 
-        <section class="history" aria-labelledby="history-title">
+        <section class="history" th:unless="${#lists.isEmpty(groups)}" aria-labelledby="history-title">
             <div class="history__head">
                 <h2 id="history-title" class="history__title">The <span data-period th:text="${period}">past week</span></h2>
                 <div th:replace="~{fragments/layout :: ranges}"></div>
@@ -60,7 +70,7 @@
             </section>
         </section>
 
-        <section class="past" aria-labelledby="past-title">
+        <section class="past" th:unless="${#lists.isEmpty(groups)}" aria-labelledby="past-title">
             <h2 id="past-title" class="history__title">Past incidents</h2>
             <p class="empty" data-incidents-empty hidden>No incidents in the <span data-period th:text="${period}">past week</span>.</p>
             <div class="past__group" th:each="day : ${days}">

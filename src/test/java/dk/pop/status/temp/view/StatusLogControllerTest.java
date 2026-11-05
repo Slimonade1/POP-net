@@ -5,6 +5,7 @@ import dk.pop.status.temp.domain.ServiceEntity;
 import dk.pop.status.temp.domain.StatusLog;
 import dk.pop.status.temp.repository.ServiceEntityRepository;
 import dk.pop.status.temp.services.StatusLogService;
+import dk.pop.status.temp.services.StatusNoteService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -37,6 +38,9 @@ class StatusLogControllerTest {
 
     @MockitoBean
     private StatusLogService logs;
+
+    @MockitoBean
+    private StatusNoteService notes;
 
     private final ServiceEntity service = new ServiceEntity(7L, "Print server", "https://print.example.test", 3);
     private final StatusLog failure = new StatusLog(20L, "Print server", "down",
