@@ -132,7 +132,7 @@ recorded on the first check and subsequent status changes, rather than every
 check.
 
 On the same page, use **Public outage note** to write an explanation for
-visitors, then click **Save public note**. Notes accept up to 511 characters.
+visitors, then click **Save public note**. Notes accept up to 500 characters.
 Saving again replaces the service's current note; **Remove public note**
 deletes it. Notes stay visible after recovery until edited or removed.
 

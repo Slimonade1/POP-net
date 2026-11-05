@@ -124,13 +124,13 @@ class StatusNoteIntegrationTest {
     @Test
     void invalidInputKeepsThePublishedNoteAndRedisplaysTheDraft() throws Exception {
         noteService.save(901, "Existing public note");
-        String oversized = "x".repeat(512);
+        String oversized = "x".repeat(501);
 
         var result = mvc.perform(post("/admin/services/901/note")
                         .with(user("admin").roles("ADMIN")).with(csrf())
                         .param("description", oversized))
                 .andExpect(redirectedUrl("/admin/services/901"))
-                .andExpect(flash().attribute("noteError", "Public notes must be 511 characters or fewer."))
+                .andExpect(flash().attribute("noteError", "Public notes must be 500 characters or fewer."))
                 .andExpect(flash().attribute("noteText", oversized))
                 .andReturn();
 
@@ -138,13 +138,34 @@ class StatusNoteIntegrationTest {
                         .flashAttrs(result.getFlashMap()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(oversized)))
-                .andExpect(content().string(containsString("Public notes must be 511 characters or fewer.")));
+                .andExpect(model().attribute("publishedNote", "Existing public note"))
+                .andExpect(content().string(containsString("class=\"public-note\">Existing public note</span>")))
+                .andExpect(content().string(containsString("Public notes must be 500 characters or fewer.")));
         assertThat(notes.findLatestByServiceId(901).orElseThrow().description()).isEqualTo("Existing public note");
 
         mvc.perform(post("/admin/services/901/note")
                         .with(user("admin").roles("ADMIN")).with(csrf()))
                 .andExpect(flash().attribute("noteError", "A public note is required."));
         assertThat(notes.findLatestByServiceId(901).orElseThrow().description()).isEqualTo("Existing public note");
+    }
+
+    @Test
+    void adminOverviewShowsPublishedNotesAndUpdatesAfterRemoval() throws Exception {
+        noteService.save(901, "Printing unavailable during maintenance");
+
+        mvc.perform(get("/admin").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Service outage notes showing")))
+                .andExpect(content().string(containsString("Print server")))
+                .andExpect(content().string(containsString("Printing unavailable during maintenance")))
+                .andExpect(content().string(containsString("href=\"/admin/services/901\"")));
+
+        noteService.delete(901);
+
+        mvc.perform(get("/admin").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("No public service outage notes are showing.")))
+                .andExpect(content().string(not(containsString("Printing unavailable during maintenance"))));
     }
 
     @Test

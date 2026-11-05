@@ -14,10 +14,26 @@
                 <h2 id="live-title" class="section-title">Announcements showing</h2>
                 <a class="button button--ghost button--small" th:href="@{/messages}">Manage</a>
             </div>
-            <p class="empty" th:if="${#lists.isEmpty(notices)}">No announcements are showing. Visitors only see the service status.</p>
+            <p class="empty" th:if="${#lists.isEmpty(notices)}">No announcements are showing.</p>
             <div class="notices" th:unless="${#lists.isEmpty(notices)}">
                 <p class="notice" th:each="notice : ${notices}"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span th:text="${notice.message}">Planned maintenance tonight.</span></p>
             </div>
+        </section>
+
+        <section class="admin-section" aria-labelledby="service-notes-title">
+            <div class="admin-section__head">
+                <h2 id="service-notes-title" class="section-title">Service outage notes showing</h2>
+                <a class="button button--ghost button--small" th:href="@{/admin/services}">Manage</a>
+            </div>
+            <p class="empty" th:if="${#lists.isEmpty(serviceNotes)}">No public service outage notes are showing.</p>
+            <article th:each="note : ${serviceNotes}">
+                <div class="admin-section__head">
+                    <h3 th:text="${note.name}">Service name</h3>
+                    <a class="button button--ghost button--small" th:href="@{/admin/services/{id}(id=${note.id})}">Manage</a>
+                </div>
+                <p class="notice"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span
+                        class="public-note" th:text="${note.note}">We are investigating the outage.</span></p>
+            </article>
         </section>
 
     </main>

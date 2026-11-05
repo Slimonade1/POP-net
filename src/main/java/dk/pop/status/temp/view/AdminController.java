@@ -1,6 +1,7 @@
 package dk.pop.status.temp.view;
 
 import dk.pop.status.temp.services.StatusMessageService;
+import dk.pop.status.temp.services.StatusNoteService;
 import dk.pop.status.temp.domain.ServiceEntity;
 import dk.pop.status.temp.domain.EmailRecipient;
 import dk.pop.status.temp.repository.EmailRecipientRepository;
@@ -22,14 +23,17 @@ public class AdminController {
     private final StatusMessageService messages;
     private final ServiceEntityRepository services;
     private final EmailRecipientRepository emailRecipients;
+    private final StatusNoteService notes;
 
     public AdminController(
             StatusMessageService messages,
             ServiceEntityRepository services,
-            EmailRecipientRepository emailRecipients) {
+            EmailRecipientRepository emailRecipients,
+            StatusNoteService notes) {
         this.messages = messages;
         this.services = services;
         this.emailRecipients = emailRecipients;
+        this.notes = notes;
     }
 
     @GetMapping("/login")
@@ -41,6 +45,7 @@ public class AdminController {
     public String adminPage(Principal principal, Model model) {
         model.addAttribute("username", principal.getName());
         model.addAttribute("notices", messages.findAll());
+        model.addAttribute("serviceNotes", notes.findPublicNotes());
         return "admin";
     }
 

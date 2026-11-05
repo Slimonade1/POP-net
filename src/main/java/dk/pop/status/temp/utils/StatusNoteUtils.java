@@ -1,7 +1,7 @@
 package dk.pop.status.temp.utils;
 
 public final class StatusNoteUtils {
-    public static final int MAX_NOTE_LENGTH = 511;
+    public static final int MAX_NOTE_LENGTH = 500;
 
     private StatusNoteUtils() {
     }

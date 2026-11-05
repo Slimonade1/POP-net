@@ -42,6 +42,7 @@ public class StatusLogController {
         model.addAttribute("historyLimit", StatusLogService.HISTORY_LIMIT);
         var note = notes.findByServiceId(id);
         model.addAttribute("hasNote", note.isPresent());
+        model.addAttribute("publishedNote", note.map(StatusNote::description).orElse(null));
         if (!model.containsAttribute("noteText")) {
             model.addAttribute("noteText", note.map(StatusNote::description).orElse(""));
         }
