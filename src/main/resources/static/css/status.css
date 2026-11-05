@@ -509,7 +509,7 @@ a {
 
 .incident:target {
     background: var(--wash);
-    border-radius: 0 6px 6px 0;
+    box-shadow: -0.75rem 0 0 var(--wash), 0.75rem 0 0 var(--wash);
 }
 
 .row__axis {
@@ -664,36 +664,64 @@ a {
 }
 
 .incidents {
-    max-width: var(--measure);
+    display: grid;
+    grid-template-columns: max-content 1fr max-content;
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
 .incident {
-    padding: 0.4rem 0 0.4rem 1rem;
-    border-left: 4px solid var(--status);
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    align-items: baseline;
+    column-gap: 1.25rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--rule);
 }
 
-.incident + .incident {
-    margin-top: 1rem;
+.incident[hidden] {
+    display: none;
+}
+
+.incident:last-child {
+    border-bottom: 0;
 }
 
 .incident p {
     margin: 0;
 }
 
-.incident__when {
+.incident__time {
     color: var(--quiet);
     font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
 }
 
-.incident__what strong {
+.incident__service {
+    color: var(--ink);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.incident__service:hover {
+    text-decoration: underline;
+}
+
+.incident__state {
+    display: grid;
+    justify-items: end;
+    text-align: right;
+}
+
+.incident__state strong {
     color: var(--status-text);
 }
 
-.incident__what span {
+.incident__state span {
     color: var(--quiet);
+    font-size: 0.875rem;
 }
 
 .past {
@@ -701,28 +729,22 @@ a {
 }
 
 .past__day {
-    margin: 1.5rem 0 0.75rem;
+    margin: 1.5rem 0 0.25rem;
     padding-bottom: 0.4rem;
     border-bottom: 2px solid var(--divider);
     font-size: 1.0625rem;
     font-weight: 800;
 }
 
-.past .incident__when {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 0.6rem;
-    align-items: baseline;
-}
+@media (max-width: 40rem) {
+    .incidents {
+        grid-template-columns: 1fr max-content;
+    }
 
-.past .incident__what {
-    font-size: 0.9375rem;
+    .incident__time {
+        grid-column: 1 / -1;
+    }
 }
-
-.past .incident + .incident {
-    margin-top: 0.6rem;
-}
-
 
 .empty {
     max-width: var(--measure);

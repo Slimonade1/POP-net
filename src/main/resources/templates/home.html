@@ -73,14 +73,14 @@
                     <li class="incident" th:each="entry : ${day.entries()}" th:id="${entry.id()}"
                         th:classappend="${'status--' + entry.status().css()}"
                         th:attr="data-start=${entry.start()},data-end=${entry.end()}">
-                        <p class="incident__when">
-                            <time th:datetime="${entry.start()}" th:text="${entry.when()}">12:22</time>
-                            <a class="button button--ghost button--small" th:href="@{/services/{slug}(slug=${entry.slug()})}"
+                        <time class="incident__time" th:datetime="${entry.start()}" th:text="${entry.when()}">12:22</time>
+                        <div class="incident__body">
+                            <a class="incident__service" th:href="@{/services/{slug}(slug=${entry.slug()})}"
                                th:text="${entry.service()}">POP Print</a>
-                            <span class="incident__what"><strong th:text="${entry.status().label()}">Down</strong>
-                                <span th:text="${entry.length()}">for 24 min</span></span>
-                        </p>
-                        <p class="incident__summary" th:text="${entry.summary()}">Not answering.</p>
+                            <p class="incident__summary" th:text="${entry.summary()}">Not answering.</p>
+                        </div>
+                        <p class="incident__state"><strong th:text="${entry.status().label()}">Down</strong>
+                            <span th:text="${entry.length()}">for 24 min</span></p>
                     </li>
                 </ol>
             </div>

@@ -50,10 +50,12 @@
                 <li class="incident" th:each="entry : ${incidents}" th:id="${entry.id()}"
                     th:classappend="${'status--' + entry.status().css()}"
                     th:attr="data-start=${entry.start()},data-end=${entry.end()}">
-                    <p class="incident__when"><time th:datetime="${entry.start()}" th:text="${entry.when()}">Thu 29 Oct, 12:22</time></p>
-                    <p class="incident__what"><strong th:text="${entry.status().label()}">Down</strong>
+                    <time class="incident__time" th:datetime="${entry.start()}" th:text="${entry.when()}">Thu 29 Oct, 12:22</time>
+                    <div class="incident__body">
+                        <p class="incident__summary" th:text="${entry.summary()}">Not answering.</p>
+                    </div>
+                    <p class="incident__state"><strong th:text="${entry.status().label()}">Down</strong>
                         <span th:text="${entry.length()}">for 18 min</span></p>
-                    <p class="incident__summary" th:text="${entry.summary()}">Not answering.</p>
                 </li>
             </ol>
         </section>
