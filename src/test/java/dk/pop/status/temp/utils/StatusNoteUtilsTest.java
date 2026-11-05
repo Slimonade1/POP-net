@@ -20,7 +20,7 @@ class StatusNoteUtilsTest {
 
     @Test
     void acceptsTheMaximumLengthAndRejectsLongerNotes() {
-        assertThat(StatusNoteUtils.normalize("x".repeat(500))).hasSize(500);
-        assertThatIllegalArgumentException().isThrownBy(() -> StatusNoteUtils.normalize("x".repeat(501)));
+        assertThat(StatusNoteUtils.normalize("x".repeat(200))).hasSize(200);
+        assertThatIllegalArgumentException().isThrownBy(() -> StatusNoteUtils.normalize("x".repeat(201)));
     }
 }

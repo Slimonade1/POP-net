@@ -124,13 +124,13 @@ class StatusNoteIntegrationTest {
     @Test
     void invalidInputKeepsThePublishedNoteAndRedisplaysTheDraft() throws Exception {
         noteService.save(901, "Existing public note");
-        String oversized = "x".repeat(501);
+        String oversized = "x".repeat(201);
 
         var result = mvc.perform(post("/admin/services/901/note")
                         .with(user("admin").roles("ADMIN")).with(csrf())
                         .param("description", oversized))
                 .andExpect(redirectedUrl("/admin/services/901"))
-                .andExpect(flash().attribute("noteError", "Public notes must be 500 characters or fewer."))
+                .andExpect(flash().attribute("noteError", "Public notes must be 200 characters or fewer."))
                 .andExpect(flash().attribute("noteText", oversized))
                 .andReturn();
 
@@ -140,7 +140,7 @@ class StatusNoteIntegrationTest {
                 .andExpect(content().string(containsString(oversized)))
                 .andExpect(model().attribute("publishedNote", "Existing public note"))
                 .andExpect(content().string(containsString("class=\"public-note\">Existing public note</span>")))
-                .andExpect(content().string(containsString("Public notes must be 500 characters or fewer.")));
+                .andExpect(content().string(containsString("Public notes must be 200 characters or fewer.")));
         assertThat(notes.findLatestByServiceId(901).orElseThrow().description()).isEqualTo("Existing public note");
 
         mvc.perform(post("/admin/services/901/note")

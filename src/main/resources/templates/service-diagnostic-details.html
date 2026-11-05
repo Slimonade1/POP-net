@@ -28,7 +28,7 @@
                         th:replace="~{fragments/icons :: icon('circle-x')}"></svg><span th:text="${noteError}"></span></p>
                 <div class="compose__foot">
                     <span class="compose__count" data-count-for="public-note" aria-live="polite"
-                          th:text="${#strings.length(noteText) + ' / ' + noteMaxLength}">0 / 500</span>
+                          th:text="${#strings.length(noteText) + ' / ' + noteMaxLength}">0 / 200</span>
                     <button class="button button--primary" type="submit">Save public note</button>
                 </div>
             </form>
