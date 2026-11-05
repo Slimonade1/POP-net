@@ -113,7 +113,7 @@ public class StatusPages {
         model.addAttribute("service", service);
         model.addAttribute("row", row);
         model.addAttribute("nowText", nowText(row.status(), latencyNow));
-        model.addAttribute("checkedText", checkedText(service.checkedAt(), now));
+        model.addAttribute("checkedText", checkedText(service.checkedAt()));
         model.addAttribute("values", Json.of(values));
         model.addAttribute("incidents", service.incidents().stream()
                 .sorted(Comparator.comparing(Incident::start).reversed())
@@ -155,7 +155,7 @@ public class StatusPages {
                 .max(Comparator.naturalOrder());
     }
 
-    private static String checkedText(ZonedDateTime checked, ZonedDateTime now) {
+    private static String checkedText(ZonedDateTime checked) {
         if (checked == null) {
             return "Not checked yet since the monitor started.";
         }

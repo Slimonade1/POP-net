@@ -37,17 +37,17 @@ class ResponseTimeRepositoryTest {
     }
 
     @Test
-    void averagesAreGroupedIntoSteps() {
+    void responseTimesAreAddedUpPerHour() {
         repository.add(1, START.plusMinutes(10), 100);
         repository.add(1, START.plusMinutes(50), 200);
         repository.add(1, START.plusHours(2).plusMinutes(5), 40);
         repository.add(2, START.plusMinutes(10), 999);
 
-        var averages = repository.averages(1, START, START.plusHours(3), 3600);
+        var hours = repository.hours(1, START, START.plusHours(3));
 
-        assertThat(averages).containsOnlyKeys(0, 2);
-        assertThat(averages.get(0)).isEqualTo(150);
-        assertThat(averages.get(2)).isEqualTo(40);
+        assertThat(hours).containsExactlyInAnyOrder(
+                new ResponseTimeRepository.Hour(START, 300, 2),
+                new ResponseTimeRepository.Hour(START.plusHours(2), 40, 1));
     }
 
     @Test

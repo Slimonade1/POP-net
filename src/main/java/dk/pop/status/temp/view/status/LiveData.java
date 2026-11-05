@@ -9,21 +9,23 @@ import dk.pop.status.temp.services.StatusMonitoringService;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.StreamSupport;
 
 @Component
 public class LiveData implements StatusSource {
     private static final String NETWORK = "Network and servers";
     private static final String WEB = "Web services";
-    private static final String OTHER = "Other services";
     private static final String NOT_ANSWERING = "Not answering.";
 
     private final ServiceEntityRepository services;
@@ -41,19 +43,31 @@ public class LiveData implements StatusSource {
 
     @Override
     public List<ServiceGroup> groups(ZonedDateTime now) {
+        LocalDate from = now.toLocalDate().minusDays(15);
         Map<String, List<StatusLog>> history = new LinkedHashMap<>();
-        for (StatusLog log : logs.findSince(now.toLocalDate().minusDays(15))) {
+        for (StatusLog log : logs.findLastBefore(from)) {
+            history.computeIfAbsent(log.service_name(), name -> new ArrayList<>()).add(log);
+        }
+        for (StatusLog log : logs.findSince(from)) {
             history.computeIfAbsent(log.service_name(), name -> new ArrayList<>()).add(log);
         }
 
         Map<String, List<ServiceView>> groups = new LinkedHashMap<>();
         groups.put(NETWORK, new ArrayList<>());
         groups.put(WEB, new ArrayList<>());
-        groups.put(OTHER, new ArrayList<>());
+        Set<String> slugs = new HashSet<>();
         StreamSupport.stream(services.findAll().spliterator(), false)
+                .filter(service -> service.name() != null && !service.name().isBlank())
+                .filter(service -> service.isIcmp() || service.isWeb())
                 .sorted(Comparator.comparing(ServiceEntity::id))
-                .forEach(service -> groups.get(group(service))
-                        .add(view(service, history.getOrDefault(service.name(), List.of()))));
+                .forEach(service -> {
+                    String slug = ServiceView.slug(service.name());
+                    if (!slugs.add(slug)) {
+                        slug = slug + "-" + service.id();
+                    }
+                    groups.get(service.isWeb() ? WEB : NETWORK)
+                            .add(view(service, slug, history.getOrDefault(service.name(), List.of())));
+                });
 
         return groups.entrySet().stream()
                 .filter(group -> !group.getValue().isEmpty())
@@ -68,10 +82,19 @@ public class LiveData implements StatusSource {
         if (service.id() == null || !service.hasLatency()) {
             return values;
         }
-        Map<Integer, Integer> averages = responseTimes.averages(service.id(), local(starts.getFirst()), local(now),
-                range.step().toSeconds());
+        long[] totals = new long[starts.size()];
+        long[] checks = new long[starts.size()];
+        for (ResponseTimeRepository.Hour hour : responseTimes.hours(service.id(), local(starts.getFirst()), local(now))) {
+            ZonedDateTime time = hour.start().atZone(ZoneId.systemDefault()).withZoneSameInstant(StatusPages.ZONE);
+            int step = starts.size() - 1;
+            while (step > 0 && time.isBefore(starts.get(step))) {
+                step--;
+            }
+            totals[step] += hour.total();
+            checks[step] += hour.checks();
+        }
         for (int i = 0; i < starts.size(); i++) {
-            values.add(averages.get(i));
+            values.add(checks[i] == 0 ? null : (int) Math.round((double) totals[i] / checks[i]));
         }
         return values;
     }
@@ -81,10 +104,10 @@ public class LiveData implements StatusSource {
         return service.hasLatency() ? service.latencyMs() : null;
     }
 
-    private ServiceView view(ServiceEntity service, List<StatusLog> history) {
+    private ServiceView view(ServiceEntity service, String slug, List<StatusLog> history) {
         Instant checked = monitoring.getLastChecked().get(service.name());
-        return new ServiceView(service.id(), service.name(), ServiceView.slug(service.name()),
-                isWeb(service), monitoring.getLiveLatencies().get(service.name()), incidents(history),
+        return new ServiceView(service.id(), service.name(), slug, service.isWeb(),
+                monitoring.getLiveLatencies().get(service.name()), incidents(history),
                 checked == null ? null : checked.atZone(StatusPages.ZONE));
     }
 
@@ -110,23 +133,6 @@ public class LiveData implements StatusSource {
             incidents.add(new Incident(start, null, Status.DOWN, NOT_ANSWERING));
         }
         return incidents;
-    }
-
-    private static String group(ServiceEntity service) {
-        String target = target(service);
-        if (target.startsWith("icmp://")) {
-            return NETWORK;
-        }
-        return isWeb(service) ? WEB : OTHER;
-    }
-
-    private static boolean isWeb(ServiceEntity service) {
-        String target = target(service);
-        return target.startsWith("http://") || target.startsWith("https://");
-    }
-
-    private static String target(ServiceEntity service) {
-        return service.description() == null ? "" : service.description().strip();
     }
 
     private static LocalDateTime local(ZonedDateTime time) {

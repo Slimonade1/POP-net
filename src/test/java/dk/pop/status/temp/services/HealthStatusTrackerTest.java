@@ -41,4 +41,12 @@ class HealthStatusTrackerTest {
 
         assertThat(tracker.recordResult(immediateService, false)).isEqualTo("down");
     }
+
+    @Test
+    void aServiceThatWasDownBeforeARestartStaysDownUntilItAnswers() {
+        tracker.remember(service.id(), "down");
+
+        assertThat(tracker.recordResult(service, false)).isEqualTo("down");
+        assertThat(tracker.recordResult(service, true)).isEqualTo("healthy");
+    }
 }

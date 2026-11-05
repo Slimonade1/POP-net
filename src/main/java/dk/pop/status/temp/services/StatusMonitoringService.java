@@ -42,6 +42,7 @@ public class StatusMonitoringService {
     private final Map<String, Integer> liveLatencies = new ConcurrentHashMap<>();
     private final Map<String, String> previousStatuses = new ConcurrentHashMap<>();
     private final Map<String, Instant> lastChecked = new ConcurrentHashMap<>();
+    private boolean rememberedLastStatuses;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(3))
@@ -63,6 +64,7 @@ public class StatusMonitoringService {
 
     @Scheduled(fixedDelay = 20000)
     public void monitorInfrastructure() {
+        rememberLastStatuses();
         Iterable<ServiceEntity> monitoredServices = serviceRepository.findAll();
         
         long taskCount = java.util.stream.StreamSupport.stream(monitoredServices.spliterator(), false).count();
@@ -75,9 +77,9 @@ public class StatusMonitoringService {
             String targetPath = service.description(); 
             if (targetPath == null || targetPath.isBlank()) continue;
 
-            if (targetPath.startsWith("icmp://")) {
+            if (service.isIcmp()) {
                 executor.submit(() -> checkIcmp(service, targetPath, isWindows));
-            } else if (targetPath.startsWith("http://") || targetPath.startsWith("https://")) {
+            } else if (service.isWeb()) {
                 executor.submit(() -> checkHttp(service, targetPath));
             }
         }
@@ -120,6 +122,24 @@ public class StatusMonitoringService {
             saveResponseTime(service, durationMs);
         }
         saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage, durationMs);
+        if (!healthy) {
+            liveLatencies.remove(service.name());
+        }
+    }
+
+    private void rememberLastStatuses() {
+        if (rememberedLastStatuses) {
+            return;
+        }
+        try {
+            for (Map.Entry<Long, StatusLog> last : statusLogRepository.findLatestByService().entrySet()) {
+                previousStatuses.put(last.getValue().service_name(), last.getValue().status());
+                healthStatusTracker.remember(last.getKey(), last.getValue().status());
+            }
+            rememberedLastStatuses = true;
+        } catch (RuntimeException e) {
+            log.atError().log("Could not read the last known statuses: " + e.getMessage());
+        }
     }
 
     private void saveResponseTime(ServiceEntity service, int durationMs) {

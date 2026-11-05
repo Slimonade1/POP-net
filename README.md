@@ -90,8 +90,8 @@ it is occupied, stop the other service before running the app.
 The home page is the public status page, and every service has its own page
 at `http://localhost:8080/services/<name>`, for example `/services/pop-print-portal`.
 Both are Thymeleaf templates in the `dk.pop.status.temp.view.status` package.
-They show the services from the `services` table, sorted into network and
-servers, web services and other services. The status, uptime, history strip
+They show every service in the `services` table that the ping service can
+check, sorted into network and servers and web services. The status, uptime, history strip
 and incidents come from the state changes the ping service writes to
 `status_logs`. Response times come from the `response_times` table, which gets
 one row per successful web check and forgets rows older than 15 days. A

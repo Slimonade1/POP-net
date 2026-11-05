@@ -4,12 +4,14 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 @Repository
 public class ResponseTimeRepository {
     private final JdbcClient jdbc;
+
+    public record Hour(LocalDateTime start, long total, long checks) {
+    }
 
     public ResponseTimeRepository(JdbcClient jdbc) {
         this.jdbc = jdbc;
@@ -27,18 +29,17 @@ public class ResponseTimeRepository {
                 .update();
     }
 
-    public Map<Integer, Integer> averages(long serviceId, LocalDateTime from, LocalDateTime to, long stepSeconds) {
-        Map<Integer, Integer> averages = new HashMap<>();
-        jdbc.sql("""
-                        SELECT FLOOR(TIMESTAMPDIFF(SECOND, ?, checked_at) / ?) AS step, ROUND(AVG(delay_ms)) AS average
+    public List<Hour> hours(long serviceId, LocalDateTime from, LocalDateTime to) {
+        return jdbc.sql("""
+                        SELECT FLOOR(TIMESTAMPDIFF(SECOND, ?, checked_at) / 3600) AS hour_index,
+                               SUM(delay_ms) AS total, COUNT(*) AS checks
                         FROM response_times
                         WHERE service_id = ? AND checked_at >= ? AND checked_at < ?
-                        GROUP BY step
+                        GROUP BY hour_index
                         """)
-                .params(from, stepSeconds, serviceId, from, to)
-                .query(results -> {
-                    averages.put(results.getInt("step"), results.getInt("average"));
-                });
-        return averages;
+                .params(from, serviceId, from, to)
+                .query((results, row) -> new Hour(from.plusHours(results.getLong("hour_index")),
+                        results.getLong("total"), results.getLong("checks")))
+                .list();
     }
 }
