@@ -4,7 +4,7 @@
 <body>
 <div class="page">
     <header th:replace="~{fragments/layout :: adminHeader('diagnostics')}"></header>
-    <main class="admin admin--wide">
+    <main class="admin">
         <h1 class="admin__title">Services</h1>
         <p class="lede">Services that are down come first. Open one to see its history or write a note for visitors.</p>
         <p class="empty" th:if="${#lists.isEmpty(services)}">No services configured.</p>

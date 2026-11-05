@@ -17,14 +17,21 @@
                     <input type="hidden" name="id" th:value="${service.id}">
                     <label class="visually-hidden" th:for="${'retry-' + service.id}"
                            th:text="${'Retry threshold for ' + service.name}">Retry threshold</label>
-                    <input class="input threshold__input" type="number" min="1" required
-                           th:id="${'retry-' + service.id}" name="retryThreshold"
-                           th:value="${service.retryThreshold}">
-                    <button class="button button--primary button--small" type="submit">Save</button>
+                    <div class="stepper">
+                        <button class="stepper__button" type="button" data-step="down" aria-label="One fewer"><svg
+                                th:replace="~{fragments/icons :: icon('minus')}"></svg></button>
+                        <input class="stepper__input" type="number" min="1" required
+                               th:id="${'retry-' + service.id}" name="retryThreshold"
+                               th:value="${service.retryThreshold}">
+                        <button class="stepper__button" type="button" data-step="up" aria-label="One more"><svg
+                                th:replace="~{fragments/icons :: icon('plus')}"></svg></button>
+                    </div>
+                    <button class="button button--primary threshold__save" type="submit">Save</button>
                 </form>
             </li>
         </ul>
     </main>
 </div>
+<script th:src="@{/js/admin.js}" defer></script>
 </body>
 </html>

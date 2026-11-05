@@ -149,7 +149,6 @@ a {
 }
 
 .email-recipient-form {
-    max-width: var(--measure);
     margin: 2rem 0;
 }
 
@@ -179,7 +178,6 @@ a {
 }
 
 .email-recipients {
-    max-width: var(--measure);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -909,7 +907,6 @@ a {
 }
 
 .admin {
-    max-width: var(--measure);
     padding-bottom: 4rem;
 }
 
@@ -956,7 +953,8 @@ a {
 }
 
 .compose textarea {
-    resize: vertical;
+    resize: none;
+    overflow: hidden;
 }
 
 .compose .alert {
@@ -1041,8 +1039,71 @@ a {
     margin: 0 0 0 auto;
 }
 
-.threshold__input {
-    width: 5rem;
+.stepper {
+    display: flex;
+    align-items: stretch;
+    height: 2.25rem;
+    border: 1px solid var(--divider);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--paper) 40%, white);
+}
+
+@media (prefers-color-scheme: dark) {
+    .stepper {
+        background: var(--wash);
+    }
+}
+
+.stepper:focus-within {
+    border-color: var(--link);
+    outline: 2px solid var(--link);
+}
+
+.stepper__button {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--quiet);
+    cursor: pointer;
+}
+
+.stepper__button:hover {
+    color: var(--ink);
+}
+
+.stepper__button .icon {
+    margin: 0;
+}
+
+.stepper__input {
+    width: 2.5rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    appearance: textfield;
+}
+
+.stepper__input:focus {
+    outline: none;
+}
+
+.stepper__input::-webkit-inner-spin-button,
+.stepper__input::-webkit-outer-spin-button {
+    margin: 0;
+    appearance: none;
+}
+
+.threshold__save {
+    height: 2.25rem;
+    padding-block: 0;
 }
 
 .site-footer p {
@@ -1135,10 +1196,6 @@ a {
 .facts dd {
     margin: 0;
     overflow-wrap: anywhere;
-}
-
-.admin--wide {
-    max-width: none;
 }
 
 .diagnostics {
