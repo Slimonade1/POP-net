@@ -99,6 +99,30 @@ public class StatusLogRepository implements UnitOfWork {
         }
     }
 
+    public List<StatusLog> findSince(LocalDate from) {
+        var sql = """
+                SELECT l.*, l.%s AS diagnostic_status, %s AS diagnostic_duration, s.name AS service_name
+                FROM status_logs l
+                JOIN services s ON s.id = l.service_id
+                WHERE l.date >= ?
+                ORDER BY l.date, l.time, l.id
+                """;
+
+        try (var connection = dataSource.getConnection();
+             var statement = connection.prepareStatement(sql.formatted(columns(connection).status(), columns(connection).durationRead()))) {
+            statement.setDate(1, java.sql.Date.valueOf(from));
+            try (var results = statement.executeQuery()) {
+                List<StatusLog> logs = new ArrayList<>();
+                while (results.next()) {
+                    logs.add(readLog(results));
+                }
+                return logs;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to read status history", e);
+        }
+    }
+
     private static StatusLog readLog(ResultSet results) throws SQLException {
         return new StatusLog(
                 results.getLong("id"),

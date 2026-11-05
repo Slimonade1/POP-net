@@ -1,22 +1,17 @@
-package dk.pop.status.temp.view.example;
+package dk.pop.status.temp.view.status;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 
 @Component
-public class ExampleData {
-    public static final ZoneId ZONE = ZoneId.of("Europe/Copenhagen");
-
+public class ExampleData implements StatusSource {
     private static final List<String> SICK = List.of(
             "Answering slowly.",
             "One of the servers stopped answering, the others took over.",
@@ -29,16 +24,12 @@ public class ExampleData {
             "Not answering after a power cut in the server room.",
             "Not answering while a switch was replaced.");
 
-    private final List<ExampleGroup> groups;
+    private final List<ServiceGroup> groups;
 
-    public ExampleData(@Value("${example-data:true}") boolean enabled) {
-        if (!enabled) {
-            groups = List.of();
-            return;
-        }
-        ZonedDateTime start = ZonedDateTime.now(ZONE).truncatedTo(ChronoUnit.MINUTES);
+    public ExampleData() {
+        ZonedDateTime start = ZonedDateTime.now(StatusPages.ZONE).truncatedTo(ChronoUnit.MINUTES);
         groups = List.of(
-                new ExampleGroup("Network infrastructure", List.of(
+                new ServiceGroup("Network infrastructure", List.of(
                         service("Backup", null, start),
                         service("Internal DHCP", null, start),
                         service("K-Net RADIUS", null, start),
@@ -46,10 +37,10 @@ public class ExampleData {
                         service("Internal RADIUS", null, start),
                         service("Locking System Server", null, start),
                         service("Management VPN", null, start))),
-                new ExampleGroup("Servers", List.of(
+                new ServiceGroup("Servers", List.of(
                         service("Jane", 1, start),
                         service("John", 16, start))),
-                new ExampleGroup("Web services", List.of(
+                new ServiceGroup("Web services", List.of(
                         service("POP Booking", 3, start),
                         service("POP Website", 97, start),
                         service("Network Monitor Service", 41, start),
@@ -64,57 +55,18 @@ public class ExampleData {
                         service("Netgrp Wiki", 10, start))));
     }
 
-    public List<ExampleGroup> groups() {
-        return groups;
-    }
-
-    public Optional<ExampleService> find(String slug) {
+    @Override
+    public List<ServiceGroup> groups(ZonedDateTime now) {
         return groups.stream()
-                .flatMap(group -> group.services().stream())
-                .filter(service -> service.slug().equals(slug))
-                .findFirst();
+                .map(group -> new ServiceGroup(group.name(), group.services().stream()
+                        .map(service -> new ServiceView(null, service.name(), service.slug(), service.hasLatency(),
+                                service.latencyMs(), service.incidents(), now))
+                        .toList()))
+                .toList();
     }
 
-    public ZonedDateTime now() {
-        return ZonedDateTime.now(ZONE).truncatedTo(ChronoUnit.MINUTES);
-    }
-
-    public static Status current(ExampleService service) {
-        return Status.worst(service.incidents().stream()
-                .filter(Incident::ongoing)
-                .map(Incident::status)
-                .toList());
-    }
-
-    public static Optional<Incident> ongoing(ExampleService service) {
-        return service.incidents().stream().filter(Incident::ongoing).findFirst();
-    }
-
-    public static String pattern(ExampleService service, Range range, ZonedDateTime now) {
-        List<ZonedDateTime> starts = range.starts(now);
-        StringBuilder pattern = new StringBuilder();
-        for (int i = 0; i < starts.size(); i++) {
-            ZonedDateTime from = starts.get(i);
-            ZonedDateTime to = i + 1 < starts.size() ? starts.get(i + 1) : now;
-            pattern.append(Status.worst(service.incidents().stream()
-                    .filter(incident -> !incident.overlap(from, to, now).isZero())
-                    .map(Incident::status)
-                    .toList()).code());
-        }
-        return pattern.toString();
-    }
-
-    public static String uptime(ExampleService service, Range range, ZonedDateTime now) {
-        ZonedDateTime from = range.starts(now).getFirst();
-        long down = service.incidents().stream()
-                .filter(incident -> incident.status() == Status.DOWN)
-                .mapToLong(incident -> incident.overlap(from, now, now).toSeconds())
-                .sum();
-        double percent = 100.0 * (1 - (double) down / range.length(now).toSeconds());
-        return percent >= 100 ? "100 %" : String.format(java.util.Locale.ROOT, "%.2f %%", percent);
-    }
-
-    public static List<Integer> latencies(ExampleService service, Range range, ZonedDateTime now) {
+    @Override
+    public List<Integer> latencies(ServiceView service, Range range, ZonedDateTime now) {
         List<ZonedDateTime> starts = range.starts(now);
         List<Integer> values = new ArrayList<>(starts.size());
         for (int i = 0; i < starts.size(); i++) {
@@ -125,8 +77,13 @@ public class ExampleData {
         return values;
     }
 
-    public static Integer latency(ExampleService service, ZonedDateTime from, ZonedDateTime to, ZonedDateTime now) {
-        if (!service.hasLatency() || !to.isAfter(from)) {
+    @Override
+    public Integer latencyNow(ServiceView service, ZonedDateTime now) {
+        return latency(service, now.minusMinutes(5), now, now);
+    }
+
+    private static Integer latency(ServiceView service, ZonedDateTime from, ZonedDateTime to, ZonedDateTime now) {
+        if (service.latencyMs() == null || !to.isAfter(from)) {
             return null;
         }
         double span = Duration.between(from, to).toSeconds();
@@ -148,15 +105,16 @@ public class ExampleData {
         return (int) Math.max(1, Math.round(service.latencyMs() * busy * noise * (1 + 7 * sick / span)));
     }
 
-    private static ExampleService service(String name, Integer latencyMs, ZonedDateTime start) {
-        return new ExampleService(name, slug(name), latencyMs, incidents(name, start));
+    private static ServiceView service(String name, Integer latencyMs, ZonedDateTime start) {
+        return new ServiceView(null, name, ServiceView.slug(name), latencyMs != null, latencyMs, incidents(name, start), start);
     }
 
-    private static ExampleService withOngoing(ExampleService service, Incident incident) {
+    private static ServiceView withOngoing(ServiceView service, Incident incident) {
         List<Incident> incidents = new ArrayList<>(service.incidents());
         incidents.add(incident);
         incidents.sort(Comparator.comparing(Incident::start));
-        return new ExampleService(service.name(), service.slug(), service.latencyMs(), incidents);
+        return new ServiceView(null, service.name(), service.slug(), service.hasLatency(), service.latencyMs(), incidents,
+                service.checkedAt());
     }
 
     private static List<Incident> incidents(String name, ZonedDateTime start) {
@@ -172,9 +130,5 @@ public class ExampleData {
         }
         incidents.sort(Comparator.comparing(Incident::start));
         return incidents;
-    }
-
-    private static String slug(String name) {
-        return name.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
     }
 }

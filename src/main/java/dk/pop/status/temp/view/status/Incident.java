@@ -1,4 +1,4 @@
-package dk.pop.status.temp.view.example;
+package dk.pop.status.temp.view.status;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;

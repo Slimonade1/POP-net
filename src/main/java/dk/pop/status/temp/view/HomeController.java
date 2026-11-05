@@ -3,7 +3,7 @@ package dk.pop.status.temp.view;
 import dk.pop.status.temp.services.StatusMessageService;
 import dk.pop.status.temp.services.StatusNoteService;
 import dk.pop.status.temp.services.StatusMonitoringService; // Used to update liveStatuses and liveLatencies
-import dk.pop.status.temp.view.example.StatusPages;
+import dk.pop.status.temp.view.status.StatusPages;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

@@ -566,6 +566,12 @@ a {
     font-size: 1rem;
 }
 
+.now__checked {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+}
+
 .now__status {
     color: var(--status-text);
     font-weight: 600;
