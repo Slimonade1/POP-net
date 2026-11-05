@@ -1,4 +1,4 @@
-package dk.pop.status.temp.view.example;
+package dk.pop.status.temp.view.status;
 
 import java.util.List;
 import java.util.Map;

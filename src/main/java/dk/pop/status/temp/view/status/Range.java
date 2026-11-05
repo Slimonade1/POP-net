@@ -1,4 +1,4 @@
-package dk.pop.status.temp.view.example;
+package dk.pop.status.temp.view.status;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -44,6 +44,10 @@ public enum Range {
             starts.add(last.minusHours((long) hours * (count - 1 - i)).atZone(now.getZone()));
         }
         return starts;
+    }
+
+    public Duration step() {
+        return Duration.ofHours(hours);
     }
 
     public String axisStart(ZonedDateTime now) {

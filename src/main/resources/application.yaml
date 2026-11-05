@@ -43,7 +43,7 @@ spring:
 notifications:
   email:
     enabled: ${EMAIL_NOTIFICATIONS_ENABLED:true}
-example-data: ${EXAMPLE_DATA:true}
+example-data: ${EXAMPLE_DATA:false}
 
 # Deprecated as moved to SQL database
 #app:

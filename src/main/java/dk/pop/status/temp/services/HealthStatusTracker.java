@@ -11,6 +11,10 @@ public class HealthStatusTracker {
     private final Map<Long, Integer> consecutiveFailures = new ConcurrentHashMap<>();
     private final Map<Long, String> effectiveStatuses = new ConcurrentHashMap<>();
 
+    public void remember(long serviceId, String status) {
+        effectiveStatuses.putIfAbsent(serviceId, status);
+    }
+
     public String recordResult(ServiceEntity service, boolean healthy) {
         if (healthy) {
             consecutiveFailures.remove(service.id());

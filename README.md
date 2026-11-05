@@ -88,25 +88,29 @@ Open `http://localhost:8080`. Port 8080 must be free for local OIDC login; if
 it is occupied, stop the other service before running the app.
 
 The home page is the public status page, and every service has its own page
-at `http://localhost:8080/services/<name>`, for example `/services/pop-print`.
-Both are Thymeleaf templates filled from example data in the
-`dk.pop.status.temp.view.example` package, which makes up two weeks of
-incidents per service. Real data replaces that package later.
+at `http://localhost:8080/services/<name>`, for example `/services/pop-print-portal`.
+Both are Thymeleaf templates in the `dk.pop.status.temp.view.status` package.
+They show every service in the `services` table that the ping service can
+check, sorted into network and servers and web services. The status, uptime, history strip
+and incidents come from the state changes the ping service writes to
+`status_logs`. Response times come from the `response_times` table, which gets
+one row per successful web check and forgets rows older than 15 days. A
+service page also says when the service was last checked.
 
-### Turn the example data on or off
+### Example data
 
-The example data is on by default. To turn it off, put the line
-`EXAMPLE_DATA=false` in `.env` and restart the app. New `.env` files already
-have it, commented out with `#`, so removing the `#` is enough. The pages then
-show no example services. Put the `#` back to turn the example data on again.
+To see the pages full of made-up history instead, for a demo or while working
+on the design, put the line `EXAMPLE_DATA=true` in `.env` and restart the app.
+New `.env` files already have it, commented out with `#`, so removing the `#`
+is enough. Put the `#` back to go back to real data.
 
 For a single run without editing `.env`:
 
 ```sh
-EXAMPLE_DATA=false ./run.sh
+EXAMPLE_DATA=true ./run.sh
 ```
 
-In IntelliJ, add `EXAMPLE_DATA` with the value `false` to the environment
+In IntelliJ, add `EXAMPLE_DATA` with the value `true` to the environment
 variables of **TempApplication**, next to `DB_PASSWORD`.
 
 Icons come from [Lucide](https://lucide.dev) (ISC license, see

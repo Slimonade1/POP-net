@@ -7,9 +7,10 @@
 
     <main>
         <section class="answer" th:unless="${#lists.isEmpty(groups)}" th:classappend="${'status--' + overall.css()}" aria-live="polite">
-            <p class="answer__meta">Example status preview: the status and incident history below use demonstration data.</p>
+            <p class="answer__meta" th:if="${example}">Example status preview: the status and incident history below use demonstration data.</p>
             <h1 class="answer__headline" th:text="${headline}">Everything is working.</h1>
-            <p class="answer__meta">Checked at <time th:text="${checkedAt}">13:00</time>.</p>
+            <p class="answer__meta" th:if="${checkedAt != null}">Services last checked at <time th:text="${checkedAt}">13:00:20</time>.</p>
+            <p class="answer__meta" th:if="${checkedAt == null}">Waiting for the first check of the services.</p>
             <ul class="problems" th:unless="${#lists.isEmpty(problems)}">
                 <li class="problem" th:each="problem : ${problems}" th:classappend="${'status--' + problem.status().css()}">
                     <div class="problem__head">
@@ -55,9 +56,9 @@
                         </div>
                         <div th:replace="~{fragments/layout :: strip(${row})}"></div>
                         <span class="row__uptime" th:attr="data-uptime=${row.uptimes()}" th:text="${row.uptime()}">100 %</span>
-                        <span class="row__now"><th:block th:if="${row.status().icon() != null}"><svg th:replace="~{fragments/icons :: icon(${row.status().icon()})}"></svg></th:block><th:block
+                        <span class="row__now" th:title="${row.checked()}"><th:block th:if="${row.status().icon() != null}"><svg th:replace="~{fragments/icons :: icon(${row.status().icon()})}"></svg></th:block><th:block
                                 th:text="${row.status().label()}">Working</th:block></span>
-                        <a class="row__note" th:if="${row.note() != null}" th:href="${'#' + row.noteId()}"
+                        <a class="row__note" th:if="${row.note() != null}" th:href="${row.noteId() != null ? '#' + row.noteId() : null}"
                            th:title="${row.note()}" th:text="${row.note()}">Answering slowly.</a>
                     </li>
                 </ul>

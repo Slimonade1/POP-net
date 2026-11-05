@@ -9,4 +9,12 @@ public record ServiceEntity(
     String name,
     String description,
     int retryThreshold
-) {}
+) {
+    public boolean isIcmp() {
+        return description != null && description.startsWith("icmp://");
+    }
+
+    public boolean isWeb() {
+        return description != null && (description.startsWith("http://") || description.startsWith("https://"));
+    }
+}

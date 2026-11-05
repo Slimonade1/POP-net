@@ -2,6 +2,7 @@ package dk.pop.status.temp.services;
 
 import dk.pop.status.temp.domain.ServiceEntity;
 import dk.pop.status.temp.domain.StatusLog;
+import dk.pop.status.temp.repository.ResponseTimeRepository;
 import dk.pop.status.temp.repository.ServiceEntityRepository;
 import dk.pop.status.temp.repository.StatusLogRepository;
 import dk.pop.status.temp.utils.Log;
@@ -16,7 +17,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,10 +36,13 @@ public class StatusMonitoringService {
     private final StatusLogRepository statusLogRepository;
     private final HealthStatusTracker healthStatusTracker;
     private final EmailNotificationService emailNotificationService;
+    private final ResponseTimeRepository responseTimes;
     
     private final Map<String, String> liveStatuses = new ConcurrentHashMap<>();
     private final Map<String, Integer> liveLatencies = new ConcurrentHashMap<>();
     private final Map<String, String> previousStatuses = new ConcurrentHashMap<>();
+    private final Map<String, Instant> lastChecked = new ConcurrentHashMap<>();
+    private boolean rememberedLastStatuses;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(3))
@@ -47,15 +53,18 @@ public class StatusMonitoringService {
             ServiceEntityRepository serviceRepository,
             StatusLogRepository statusLogRepository,
             HealthStatusTracker healthStatusTracker,
-            EmailNotificationService emailNotificationService) {
+            EmailNotificationService emailNotificationService,
+            ResponseTimeRepository responseTimes) {
         this.serviceRepository = serviceRepository;
         this.statusLogRepository = statusLogRepository;
         this.healthStatusTracker = healthStatusTracker;
         this.emailNotificationService = emailNotificationService;
+        this.responseTimes = responseTimes;
     }
 
     @Scheduled(fixedDelay = 20000)
     public void monitorInfrastructure() {
+        rememberLastStatuses();
         Iterable<ServiceEntity> monitoredServices = serviceRepository.findAll();
         
         long taskCount = java.util.stream.StreamSupport.stream(monitoredServices.spliterator(), false).count();
@@ -68,9 +77,9 @@ public class StatusMonitoringService {
             String targetPath = service.description(); 
             if (targetPath == null || targetPath.isBlank()) continue;
 
-            if (targetPath.startsWith("icmp://")) {
+            if (service.isIcmp()) {
                 executor.submit(() -> checkIcmp(service, targetPath, isWindows));
-            } else if (targetPath.startsWith("http://") || targetPath.startsWith("https://")) {
+            } else if (service.isWeb()) {
                 executor.submit(() -> checkHttp(service, targetPath));
             }
         }
@@ -109,7 +118,41 @@ public class StatusMonitoringService {
         }
 
         int durationMs = (int) ((System.nanoTime() - startTime) / 1_000_000);
+        if (healthy) {
+            saveResponseTime(service, durationMs);
+        }
         saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage, durationMs);
+        if (!healthy) {
+            liveLatencies.remove(service.name());
+        }
+    }
+
+    private void rememberLastStatuses() {
+        if (rememberedLastStatuses) {
+            return;
+        }
+        try {
+            for (Map.Entry<Long, StatusLog> last : statusLogRepository.findLatestByService().entrySet()) {
+                previousStatuses.put(last.getValue().service_name(), last.getValue().status());
+                healthStatusTracker.remember(last.getKey(), last.getValue().status());
+            }
+            rememberedLastStatuses = true;
+        } catch (RuntimeException e) {
+            log.atError().log("Could not read the last known statuses: " + e.getMessage());
+        }
+    }
+
+    private void saveResponseTime(ServiceEntity service, int durationMs) {
+        try {
+            responseTimes.add(service.id(), LocalDateTime.now(), durationMs);
+        } catch (RuntimeException e) {
+            log.atError().log("Could not save response time for " + service.name() + ": " + e.getMessage());
+        }
+    }
+
+    @Scheduled(fixedDelay = 3600000)
+    public void forgetOldResponseTimes() {
+        responseTimes.deleteBefore(LocalDateTime.now().minusDays(15));
     }
 
     private void checkIcmp(ServiceEntity service, String targetPath, boolean isWindows) {
@@ -150,6 +193,7 @@ public class StatusMonitoringService {
     private void saveLogEntry(ServiceEntity service, String currentStatus, String msg, int latency) {
         liveStatuses.put(service.name(), currentStatus);
         liveLatencies.put(service.name(), latency);
+        lastChecked.put(service.name(), Instant.now());
         
         String lastKnownStatus = previousStatuses.get(service.name());
 
@@ -196,4 +240,5 @@ public class StatusMonitoringService {
 
     public Map<String, String> getLiveStatuses() { return liveStatuses; }
     public Map<String, Integer> getLiveLatencies() { return liveLatencies; }
+    public Map<String, Instant> getLastChecked() { return lastChecked; }
 }
