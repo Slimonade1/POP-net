@@ -9,6 +9,26 @@
         update();
     }
 
+    for (const area of document.querySelectorAll(".compose textarea")) {
+        const fit = () => {
+            area.style.height = "auto";
+            area.style.height = area.scrollHeight + area.offsetHeight - area.clientHeight + "px";
+        };
+        area.addEventListener("input", fit);
+        fit();
+    }
+
+    for (const button of document.querySelectorAll("[data-step]")) {
+        button.addEventListener("click", () => {
+            const input = button.parentElement.querySelector("input");
+            if (button.dataset.step === "up") {
+                input.stepUp();
+            } else {
+                input.stepDown();
+            }
+        });
+    }
+
     for (const form of document.querySelectorAll("form[data-confirm]")) {
         form.addEventListener("submit", (event) => {
             if (!confirm(form.dataset.confirm)) {

@@ -7,6 +7,13 @@
             <path d="M12 9v4"/>
             <path d="M12 17h.01"/>
         </th:block>
+        <th:block th:case="'minus'">
+            <path d="M5 12h14"/>
+        </th:block>
+        <th:block th:case="'plus'">
+            <path d="M5 12h14"/>
+            <path d="M12 5v14"/>
+        </th:block>
         <th:block th:case="'circle-x'">
             <circle cx="12" cy="12" r="10"/>
             <path d="m15 9-6 6"/>

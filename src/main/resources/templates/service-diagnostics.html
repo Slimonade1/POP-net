@@ -1,21 +1,33 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Service diagnostics, POP status')}"></head>
+<head th:replace="~{fragments/layout :: head('Services, POP status')}"></head>
 <body>
 <div class="page">
     <header th:replace="~{fragments/layout :: adminHeader('diagnostics')}"></header>
     <main class="admin">
-        <h1>Service diagnostics</h1>
-        <p>Latest recorded status for each service. Open a service to see its monitoring target and recent history.</p>
-        <p>The monitor saves the first result and subsequent status changes. These messages are not live check results; an error may change while a service remains down.</p>
-        <p th:if="${#lists.isEmpty(services)}">No services configured.</p>
-        <ul>
-            <li th:each="service : ${services}" th:with="log=${latestLogs[service.id]}">
-                <h2><a th:href="@{/admin/services/{id}(id=${service.id})}" th:text="${service.name}">Service name</a></h2>
-                <p th:if="${log == null}">No monitoring results recorded yet.</p>
-                <th:block th:if="${log != null}">
-                    <dl th:replace="~{fragments/diagnostics :: logDetails(${log})}"></dl>
-                </th:block>
+        <h1 class="admin__title">Services</h1>
+        <p class="lede">Services that are down come first. Open one to see its history or write a note for visitors.</p>
+        <p class="empty" th:if="${#lists.isEmpty(services)}">No services configured.</p>
+        <ul class="diagnostics">
+            <li class="diagnostic" th:each="service : ${services}"
+                th:with="log=${latestLogs[service.id]}, down=${log != null and log.status == 'down'}, noted=${noteText.containsKey(service.id)}"
+                th:classappend="${down ? 'status--down' : ''}">
+                <a class="diagnostic__name" th:href="@{/admin/services/{id}(id=${service.id})}" th:text="${service.name}">POP Print</a>
+                <span class="diagnostic__status" th:if="${log == null}">Not checked</span>
+                <span class="diagnostic__status" th:if="${log != null and !down}">Working</span>
+                <span class="diagnostic__status" th:if="${down}">Down since <time th:datetime="|${log.date}T${log.time}|"
+                        th:text="|${log.day()}, ${log.clock()}|">Thu 5 Nov, 10:30</time></span>
+                <a class="diagnostic__action" th:if="${down and !noted}"
+                   th:href="@{/admin/services/{id}(id=${service.id})}">No note yet, write one</a>
+                <a class="diagnostic__action diagnostic__action--quiet note-peek" th:if="${noted}"
+                   th:href="@{/admin/services/{id}(id=${service.id})}"><th:block
+                        th:text="${down ? 'Note showing' : 'Note still showing'}">Note showing</th:block><span class="note-peek__card"
+                        role="tooltip" th:text="${noteText[service.id]}">The VPN gateway is being replaced tonight.</span></a>
+                <span class="diagnostic__ms" th:if="${log != null and !down and !noted and log.delay_ms != null}"
+                      th:text="${log.delay_ms + ' ms'}">125 ms</span>
+                <p class="diagnostic__message" th:if="${log == null}">No monitoring results recorded yet.</p>
+                <p class="diagnostic__message" th:if="${down}"
+                   th:text="${#strings.isEmpty(log.message) ? 'No diagnostic message recorded.' : log.message}">HTTP Fault: 503</p>
             </li>
         </ul>
     </main>

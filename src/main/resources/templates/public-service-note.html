@@ -5,11 +5,13 @@
 <div class="page">
     <header th:replace="~{fragments/layout :: header}"></header>
     <main>
-        <p class="back"><a th:href="@{/}">All service updates</a></p>
+        <p class="back"><a class="button button--ghost button--small" th:href="@{/}"><svg
+                th:replace="~{fragments/icons :: icon('arrow-left')}"></svg>All services</a></p>
         <h1 class="page-title" th:text="${service.name}">Service name</h1>
-        <section class="panel">
-            <h2 class="section-title">From the network group</h2>
-            <p class="public-note" th:if="${service.note != null}" th:text="${service.note}">We are investigating the outage.</p>
+        <section class="panel" aria-labelledby="note-title">
+            <h2 id="note-title" class="section-title">From the network group</h2>
+            <p class="notice" th:if="${service.note != null}"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span
+                    class="public-note" th:text="${service.note}">We are investigating the outage.</span></p>
             <p class="empty" th:if="${service.note == null}">No public note has been posted for this service.</p>
         </section>
     </main>

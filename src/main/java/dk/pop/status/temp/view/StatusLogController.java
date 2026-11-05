@@ -1,5 +1,7 @@
 package dk.pop.status.temp.view;
 
+import dk.pop.status.temp.domain.ServiceEntity;
+import dk.pop.status.temp.domain.StatusLog;
 import dk.pop.status.temp.repository.ServiceEntityRepository;
 import dk.pop.status.temp.services.StatusLogService;
 import dk.pop.status.temp.services.StatusNoteService;
@@ -11,6 +13,11 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Controller
 public class StatusLogController {
@@ -26,8 +33,27 @@ public class StatusLogController {
 
     @GetMapping("/admin/services")
     public String services(Model model) {
-        model.addAttribute("services", services.findAll());
-        model.addAttribute("latestLogs", logs.findLatestByService());
+        Map<Long, StatusLog> latest = logs.findLatestByService();
+        List<ServiceEntity> down = new ArrayList<>();
+        List<ServiceEntity> others = new ArrayList<>();
+        for (ServiceEntity service : services.findAll()) {
+            StatusLog log = latest.get(service.id());
+            if (log != null && "down".equals(log.status())) {
+                down.add(service);
+            } else {
+                others.add(service);
+            }
+        }
+        down.addAll(others);
+
+        Map<Long, String> noteText = new HashMap<>();
+        for (StatusNoteService.PublicService note : notes.findPublicNotes()) {
+            noteText.put(note.id(), note.note());
+        }
+
+        model.addAttribute("services", down);
+        model.addAttribute("latestLogs", latest);
+        model.addAttribute("noteText", noteText);
         return "service-diagnostics";
     }
 
