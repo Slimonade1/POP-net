@@ -20,9 +20,13 @@ Start the database using the **Start MySQL** Docker Compose run configuration.
 It reads the passwords from `.env`. If IntelliJ asks, configure its Docker
 connection first and wait for the MySQL container to become healthy.
 
-Run **TempApplication** after MySQL is healthy. Spring reads the project-root
-`.env` file automatically, so the app uses the same `DB_PASSWORD` as Docker
-Compose without copying the password into an IntelliJ run configuration.
+The application run configuration must also receive the application password:
+
+1. Open **Run → Edit Configurations…** and select **TempApplication**.
+2. Choose **Modify options → Environment variables**.
+3. Add `DB_PASSWORD` with the same value as `DB_PASSWORD` in `.env` (without
+   quotation marks), then click **Apply** and **OK**.
+4. Run **TempApplication** after MySQL is healthy.
 
 ### Run from PowerShell
 
@@ -55,11 +59,7 @@ MySQL, waits until the database is healthy, and runs the app on port 8080, or
 the next free port if 8080 is taken. Stop the app with Ctrl+C; MySQL keeps
 running in the background until you run `docker compose down`.
 
-To start only MySQL for an IntelliJ run, load `.env` and start the Compose
-service. Then launch **TempApplication** from IntelliJ. Do not run `./run.sh`
-at the same time; it also starts the Java application.
-
-To do the full startup from the terminal:
+To do the same steps by hand:
 
 ```sh
 cp .env.example .env    # then set the two passwords
@@ -72,19 +72,18 @@ Open `http://localhost:8080`. If port 8080 is already taken, the app starts on
 the next free port (8081, 8082, ...) and says so in the log. Set `SERVER_PORT`
 to start from a different port.
 
-The home page shows administrator-written notes under **Service updates**.
-These notes come from the database and link to real services at
-`/services/id/<id>`. The status charts and incident history below are still an
-explicitly labelled example preview from `dk.pop.status.temp.view.example`.
-Example service pages, such as `/services/pop-print`, belong to that preview.
+The home page is the public status page, and every service has its own page
+at `http://localhost:8080/services/<name>`, for example `/services/pop-print`.
+Both are Thymeleaf templates filled from example data in the
+`dk.pop.status.temp.view.example` package, which makes up two weeks of
+incidents per service. Real data replaces that package later.
 
 ### Turn the example data on or off
 
 The example data is on by default. To turn it off, put the line
 `EXAMPLE_DATA=false` in `.env` and restart the app. New `.env` files already
-have it, commented out with `#`, so removing the `#` is enough. This hides the
-example status charts and incidents; saved service notes and announcements
-remain visible. Put the `#` back to turn the example data on again.
+have it, commented out with `#`, so removing the `#` is enough. The pages then
+show no example services. Put the `#` back to turn the example data on again.
 
 For a single run without editing `.env`:
 
@@ -113,53 +112,6 @@ as user `popnet`. Override `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` through
 environment variables to connect to a different MySQL server. The schema script
 in `src/main/resources/migrations` runs when the application starts.
 
-The log repository supports both the original `stats` / `duration_ms` columns
-and the `status` / `delay_ms` columns used by newer installations. It detects
-the existing names for reads and writes, so the diagnostics and public-note
-features require no log-column migration. Databases already upgraded by the
-earlier migration are also supported, including logs saved in either duration
-column. Restart the app after changing database columns so it detects them again.
-
-The only remaining schema upgrade in `0002` adds `services.retry_threshold`
-when missing. This field stores the per-service retry settings from the
-existing retry-threshold feature. It preserves existing data and does nothing
-on subsequent starts once the field exists.
-
-Admins can open **Service diagnostics** at `/admin/services` to see the latest
-recorded status and diagnostic message for each database service. Select a
-service to see its monitoring target and up to 50 recent status records, newest
-first. These pages require an admin login and use real database logs even when
-the public status pages show example data. The monitor records its first result
-and subsequent status changes, so the displayed error is the saved diagnostic
-from that event, not necessarily the latest check. Stored diagnostics are
-currently limited to 200 characters. The pages use basic HTML within the
-existing admin layout so their presentation can be developed separately.
-
-On the same service detail page, admins can create or edit a **Public outage
-note**, or remove it. The form accepts up to 511 characters and preserves line
-breaks. Each service has one current note, stored in the existing `status_notes`
-table and associated by service ID. Saving replaces that service's previous
-note. The note remains public after recovery until an admin edits or removes
-it; this feature does not archive notes against individual incidents. Technical
-diagnostics and monitoring targets remain on the admin pages.
-
-No schema migration is needed. Saves and removals lock the service row inside
-a transaction to keep concurrent requests from creating multiple current notes.
-
-The diagnostics tests use an isolated H2 database and rendered MVC pages. Run
-them without starting MySQL:
-
-```sh
-./mvnw -Dtest=StatusLogRepositoryTest,StatusLogControllerTest test
-```
-
-The public-note tests cover persistence, editing/removal, validation, HTML
-escaping, admin authorization, CSRF protection, and anonymous public access:
-
-```sh
-./mvnw -Dtest=StatusNoteUtilsTest,StatusNoteIntegrationTest test
-```
-
 Status changes can send emails to the recipients configured under the
 **Email notifications** tab in the admin UI. Add the SMTP account that should
 send notifications to `.env` as `SMTP_USERNAME`, and its SMTP credential as
@@ -170,3 +122,21 @@ Use `EMAIL_NOTIFICATIONS_ENABLED=false` to disable notifications.
 Application code is organized into `domain`, `repository`, `services`, `utils`,
 and `view` packages. Thymeleaf templates live in
 `src/main/resources/templates`.
+
+## Admin diagnostics and public outage notes
+
+Log in at `/admin` (development account: `admin` / `admin`), open **Service
+diagnostics**, and select a service. The detail page shows its latest recorded
+status, diagnostic message, and up to 50 recent status records. Messages are
+recorded on the first check and subsequent status changes, rather than every
+check.
+
+On the same page, use **Public outage note** to write an explanation for
+visitors, then click **Save public note**. Notes accept up to 511 characters.
+Saving again replaces the service's current note; **Remove public note**
+deletes it. Notes stay visible after recovery until edited or removed.
+
+Published notes appear under **Service updates** on the homepage and link to
+the service's public page at `/services/id/<id>`. They use database data and
+remain visible with `EXAMPLE_DATA=false`. Monitoring targets and technical
+diagnostics are available only on the admin pages.
