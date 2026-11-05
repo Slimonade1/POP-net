@@ -83,7 +83,7 @@ incidents per service. Real data replaces that package later.
 The example data is on by default. To turn it off, put the line
 `EXAMPLE_DATA=false` in `.env` and restart the app. New `.env` files already
 have it, commented out with `#`, so removing the `#` is enough. The pages then
-show no services. Put the `#` back to turn the example data on again.
+show no example services. Put the `#` back to turn the example data on again.
 
 For a single run without editing `.env`:
 
@@ -122,3 +122,21 @@ Use `EMAIL_NOTIFICATIONS_ENABLED=false` to disable notifications.
 Application code is organized into `domain`, `repository`, `services`, `utils`,
 and `view` packages. Thymeleaf templates live in
 `src/main/resources/templates`.
+
+## Admin diagnostics and public outage notes
+
+Log in at `/admin` (development account: `admin` / `admin`), open **Service
+diagnostics**, and select a service. The detail page shows its latest recorded
+status, diagnostic message, and up to 50 recent status records. Messages are
+recorded on the first check and subsequent status changes, rather than every
+check.
+
+On the same page, use **Public outage note** to write an explanation for
+visitors, then click **Save public note**. Notes accept up to 200 characters.
+Saving again replaces the service's current note; **Remove public note**
+deletes it. Notes stay visible after recovery until edited or removed.
+
+Published notes appear under **Service updates** on the homepage and link to
+the service's public page at `/services/id/<id>`. They use database data and
+remain visible with `EXAMPLE_DATA=false`. Monitoring targets and technical
+diagnostics are available only on the admin pages.

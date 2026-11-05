@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Service diagnostics, POP status')}"></head>
+<body>
+<div class="page">
+    <header th:replace="~{fragments/layout :: adminHeader('diagnostics')}"></header>
+    <main class="admin">
+        <h1>Service diagnostics</h1>
+        <p>Latest recorded status for each service. Open a service to see its monitoring target and recent history.</p>
+        <p>The monitor saves the first result and subsequent status changes. These messages are not live check results; an error may change while a service remains down.</p>
+        <p th:if="${#lists.isEmpty(services)}">No services configured.</p>
+        <ul>
+            <li th:each="service : ${services}" th:with="log=${latestLogs[service.id]}">
+                <h2><a th:href="@{/admin/services/{id}(id=${service.id})}" th:text="${service.name}">Service name</a></h2>
+                <p th:if="${log == null}">No monitoring results recorded yet.</p>
+                <th:block th:if="${log != null}">
+                    <dl th:replace="~{fragments/diagnostics :: logDetails(${log})}"></dl>
+                </th:block>
+            </li>
+        </ul>
+    </main>
+</div>
+</body>
+</html>

@@ -9,6 +9,7 @@
         <p class="back"><a class="button button--ghost button--small" th:href="@{/}"><svg
                 th:replace="~{fragments/icons :: icon('arrow-left')}"></svg>All services</a></p>
         <h1 class="page-title" th:text="${row.name()}">POP Print</h1>
+        <p class="empty">Example status preview: this page uses demonstration data.</p>
         <p class="now"><span class="now__status"><th:block th:if="${row.status().icon() != null}"><svg th:replace="~{fragments/icons :: icon(${row.status().icon()})}"></svg></th:block><th:block
                 th:text="${row.status().label() + ' now'}">Having problems now</th:block></span><th:block
                 th:text="${nowText}">, answering in 119 ms.</th:block></p>

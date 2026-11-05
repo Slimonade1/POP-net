@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${service.name + ', POP status'})}"></head>
+<body>
+<div class="page">
+    <header th:replace="~{fragments/layout :: header}"></header>
+    <main>
+        <p class="back"><a th:href="@{/}">All service updates</a></p>
+        <h1 class="page-title" th:text="${service.name}">Service name</h1>
+        <section class="panel">
+            <h2 class="section-title">From the network group</h2>
+            <p class="public-note" th:if="${service.note != null}" th:text="${service.note}">We are investigating the outage.</p>
+            <p class="empty" th:if="${service.note == null}">No public note has been posted for this service.</p>
+        </section>
+    </main>
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</div>
+</body>
+</html>

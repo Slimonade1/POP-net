@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Service diagnostics, POP status')}"></head>
+<body>
+<div class="page">
+    <header th:replace="~{fragments/layout :: adminHeader('diagnostics')}"></header>
+    <main class="admin">
+        <p><a th:href="@{/admin/services}">All service diagnostics</a></p>
+        <h1 class="admin__title" th:text="${service.name}">Service name</h1>
+        <p class="lede">Public notes show on the front page and the service's public page until you edit or remove them, including after recovery.</p>
+        <section class="admin-section" aria-labelledby="public-note-title">
+            <div class="admin-section__head">
+                <h2 id="public-note-title" class="section-title">Public outage note</h2>
+                <form th:if="${hasNote}" method="post" th:action="@{/admin/services/{id}/note/delete(id=${service.id})}"
+                      data-confirm="Remove this public note? It disappears from the status page right away.">
+                    <button class="button button--ghost button--small button--danger" type="submit">Remove public note</button>
+                </form>
+            </div>
+            <p><a class="button button--ghost button--small" th:href="@{/services/id/{id}(id=${service.id})}">View public service page</a></p>
+            <p class="notice" th:if="${noteSuccess}" role="status"><svg
+                    th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span th:text="${noteSuccess}"></span></p>
+            <form class="compose" method="post" th:action="@{/admin/services/{id}/note(id=${service.id})}">
+                <label class="field__label" for="public-note">Explain the outage to visitors</label>
+                <textarea class="input" id="public-note" name="description" rows="3" required
+                          placeholder="Example: Printing is unavailable while we replace the print server."
+                          th:maxlength="${noteMaxLength}" th:text="${noteText}"></textarea>
+                <p class="alert status--down" th:if="${noteError}" role="alert"><svg
+                        th:replace="~{fragments/icons :: icon('circle-x')}"></svg><span th:text="${noteError}"></span></p>
+                <div class="compose__foot">
+                    <span class="compose__count" data-count-for="public-note" aria-live="polite"
+                          th:text="${#strings.length(noteText) + ' / ' + noteMaxLength}">0 / 200</span>
+                    <button class="button button--primary" type="submit">Save public note</button>
+                </div>
+            </form>
+        </section>
+        <section id="published-note" class="admin-section" aria-labelledby="published-note-title">
+            <h2 id="published-note-title" class="section-title">Showing now</h2>
+            <p class="empty" th:unless="${hasNote}">No public outage note is showing for this service.</p>
+            <div class="notices" th:if="${hasNote}">
+                <p class="notice"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span
+                        class="public-note" th:text="${publishedNote}">We are investigating the outage.</span></p>
+            </div>
+        </section>
+        <h2>Admin diagnostics</h2>
+        <dl>
+            <dt>Monitoring target</dt>
+            <dd th:text="${#strings.isEmpty(service.description) ? 'Not configured' : service.description}">https://example.test</dd>
+            <dt>Consecutive failures before reporting down</dt>
+            <dd th:text="${service.retryThreshold}">3</dd>
+        </dl>
+        <p>The monitor saves the first result and subsequent status changes. These messages are not live check results; an error may change while a service remains down.</p>
+        <p th:if="${latestLog == null}">No monitoring results recorded yet.</p>
+        <section th:if="${latestLog != null}">
+            <h2>Latest recorded status</h2>
+            <dl th:replace="~{fragments/diagnostics :: logDetails(${latestLog})}"></dl>
+        </section>
+        <section th:unless="${#lists.isEmpty(history)}">
+            <h2>Recent status history</h2>
+            <p th:text="${'Up to ' + historyLimit + ' most recent records, newest first.'}"></p>
+            <ol>
+                <li th:each="log : ${history}">
+                    <dl th:replace="~{fragments/diagnostics :: logDetails(${log})}"></dl>
+                </li>
+            </ol>
+        </section>
+    </main>
+</div>
+<script th:src="@{/js/admin.js}" defer></script>
+</body>
+</html>

@@ -849,6 +849,11 @@ a {
     text-decoration: underline;
 }
 
+.public-note {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
 .admin-header {
     padding-top: 1.5rem;
     border-bottom: 1px solid var(--rule);

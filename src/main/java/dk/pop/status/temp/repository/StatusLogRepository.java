@@ -6,20 +6,116 @@ import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.HashSet;
+import java.util.Locale;
 
 @Repository
 public class StatusLogRepository implements UnitOfWork {
     private final DataSource dataSource;
 
     private final ThreadLocal<Connection> connectionHolder = new ThreadLocal<>();
+    private volatile LogColumns logColumns;
+
+    private record LogColumns(String status, String duration, String durationRead) {
+    }
+
+    private LogColumns columns(Connection connection) throws SQLException {
+        if (logColumns != null) {
+            return logColumns;
+        }
+        try (var statement = connection.prepareStatement("SELECT * FROM status_logs WHERE 1 = 0");
+             var result = statement.executeQuery()) {
+            var names = new HashSet<String>();
+            var metadata = result.getMetaData();
+            for (int i = 1; i <= metadata.getColumnCount(); i++) {
+                names.add(metadata.getColumnName(i).toLowerCase(Locale.ROOT));
+            }
+            String status = names.contains("stats") ? "stats" : "status";
+            String duration = names.contains("duration_ms") ? "duration_ms" : "delay_ms";
+            // A database upgraded by the previous migration may contain both.
+            String read = names.contains("duration_ms") && names.contains("delay_ms")
+                    ? "COALESCE(l.duration_ms, l.delay_ms)" : "l." + duration;
+            logColumns = new LogColumns(status, duration, read);
+            return logColumns;
+        }
+    }
+
+    public Map<Long, StatusLog> findLatestByService() {
+        var sql = """
+                SELECT l.*, l.%s AS diagnostic_status, %s AS diagnostic_duration, s.name AS service_name
+                FROM services s
+                JOIN status_logs l ON l.id = (
+                    SELECT recent.id FROM status_logs recent
+                    WHERE recent.service_id = s.id
+                    ORDER BY recent.date DESC, recent.time DESC, recent.id DESC
+                    LIMIT 1
+                )
+                """;
+
+        try (var connection = dataSource.getConnection();
+             var statement = connection.prepareStatement(sql.formatted(columns(connection).status(), columns(connection).durationRead()));
+             var results = statement.executeQuery()) {
+            Map<Long, StatusLog> logs = new HashMap<>();
+            while (results.next()) {
+                logs.put(results.getLong("service_id"), readLog(results));
+            }
+            return logs;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to read latest status logs", e);
+        }
+    }
+
+    public List<StatusLog> findRecentByServiceId(long serviceId, int limit) {
+        var sql = """
+                SELECT l.*, l.%s AS diagnostic_status, %s AS diagnostic_duration, s.name AS service_name
+                FROM status_logs l
+                JOIN services s ON s.id = l.service_id
+                WHERE l.service_id = ?
+                ORDER BY l.date DESC, l.time DESC, l.id DESC
+                LIMIT ?
+                """;
+
+        try (var connection = dataSource.getConnection();
+             var statement = connection.prepareStatement(sql.formatted(columns(connection).status(), columns(connection).durationRead()))) {
+            statement.setLong(1, serviceId);
+            statement.setInt(2, limit);
+            try (var results = statement.executeQuery()) {
+                List<StatusLog> logs = new ArrayList<>();
+                while (results.next()) {
+                    logs.add(readLog(results));
+                }
+                return logs;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to read service status history", e);
+        }
+    }
+
+    private static StatusLog readLog(ResultSet results) throws SQLException {
+        return new StatusLog(
+                results.getLong("id"),
+                results.getString("service_name"),
+                results.getString("diagnostic_status"),
+                results.getObject("time", LocalTime.class),
+                results.getObject("date", LocalDate.class),
+                results.getString("message"),
+                results.getObject("diagnostic_duration", Integer.class));
+    }
 
     public void create(StatusLog statusLog) {
         var findServiceId = "SELECT id FROM services WHERE name = ?";
         
         var stmt = """
         INSERT INTO status_logs
-            (service_id, status, time, date, message, delay_ms)
+            (service_id, %s, time, date, message, %s)
         VALUES (?, ?, ?, ?, ?, ?)
         """;
 
@@ -33,7 +129,8 @@ public class StatusLogRepository implements UnitOfWork {
 
                 long serviceId = resultSet.getLong("id");
 
-                try (var insertStatement = getConnection().prepareStatement(stmt)) {
+                var columns = columns(getConnection());
+                try (var insertStatement = getConnection().prepareStatement(stmt.formatted(columns.status(), columns.duration()))) {
                     insertStatement.setLong(1, serviceId);
                     insertStatement.setString(2, statusLog.status());
                     insertStatement.setTime(3, java.sql.Time.valueOf(statusLog.time()));
