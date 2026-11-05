@@ -26,14 +26,14 @@
                 <a class="button button--ghost button--small" th:href="@{/admin/services}">Manage</a>
             </div>
             <p class="empty" th:if="${#lists.isEmpty(serviceNotes)}">No public service outage notes are showing.</p>
-            <article th:each="note : ${serviceNotes}">
-                <div class="admin-section__head">
-                    <h3 th:text="${note.name}">Service name</h3>
-                    <a class="button button--ghost button--small" th:href="@{/admin/services/{id}(id=${note.id})}">Manage</a>
-                </div>
-                <p class="notice"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span
-                        class="public-note" th:text="${note.note}">We are investigating the outage.</span></p>
-            </article>
+            <ul class="posted" th:unless="${#lists.isEmpty(serviceNotes)}">
+                <li class="notice" th:each="note : ${serviceNotes}">
+                    <svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg>
+                    <span class="posted__text"><strong th:text="${note.name}">Print server</strong>
+                        <span class="public-note" th:text="${note.note}">We are investigating the outage.</span></span>
+                    <a class="button button--ghost button--small" th:href="@{/admin/services/{id}(id=${note.id})}">Edit</a>
+                </li>
+            </ul>
         </section>
 
     </main>

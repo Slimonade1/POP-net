@@ -5,63 +5,71 @@
 <div class="page">
     <header th:replace="~{fragments/layout :: adminHeader('diagnostics')}"></header>
     <main class="admin">
-        <p><a th:href="@{/admin/services}">All service diagnostics</a></p>
+        <p class="back"><a class="button button--ghost button--small" th:href="@{/admin/services}"><svg
+                th:replace="~{fragments/icons :: icon('arrow-left')}"></svg>All services</a></p>
         <h1 class="admin__title" th:text="${service.name}">Service name</h1>
-        <p class="lede">Public notes show on the front page and the service's public page until you edit or remove them, including after recovery.</p>
-        <section class="admin-section" aria-labelledby="public-note-title">
-            <div class="admin-section__head">
-                <h2 id="public-note-title" class="section-title">Public outage note</h2>
-                <form th:if="${hasNote}" method="post" th:action="@{/admin/services/{id}/note/delete(id=${service.id})}"
-                      data-confirm="Remove this public note? It disappears from the status page right away.">
-                    <button class="button button--ghost button--small button--danger" type="submit">Remove public note</button>
-                </form>
+        <th:block th:with="down=${latestLog != null and latestLog.status == 'down'}">
+            <p class="empty" th:if="${latestLog == null}">No monitoring results recorded yet.</p>
+            <div class="detail-status" th:if="${latestLog != null}" th:classappend="${down ? 'status--down' : ''}">
+                <p class="diagnostic__status" th:if="${!down}">Working since <time th:datetime="|${latestLog.date}T${latestLog.time}|"
+                        th:text="|${latestLog.day()}, ${latestLog.clock()}|">Thu 5 Nov, 10:30</time></p>
+                <p class="diagnostic__status" th:if="${down}">Down since <time th:datetime="|${latestLog.date}T${latestLog.time}|"
+                        th:text="|${latestLog.day()}, ${latestLog.clock()}|">Thu 5 Nov, 10:30</time></p>
+                <p class="diagnostic__message" th:if="${down}"
+                   th:text="${#strings.isEmpty(latestLog.message) ? 'No diagnostic message recorded.' : latestLog.message}">HTTP Fault: 503</p>
             </div>
-            <p><a class="button button--ghost button--small" th:href="@{/services/id/{id}(id=${service.id})}">View public service page</a></p>
-            <p class="notice" th:if="${noteSuccess}" role="status"><svg
-                    th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span th:text="${noteSuccess}"></span></p>
-            <form class="compose" method="post" th:action="@{/admin/services/{id}/note(id=${service.id})}">
-                <label class="field__label" for="public-note">Explain the outage to visitors</label>
-                <textarea class="input" id="public-note" name="description" rows="3" required
-                          placeholder="Example: Printing is unavailable while we replace the print server."
-                          th:maxlength="${noteMaxLength}" th:text="${noteText}"></textarea>
-                <p class="alert status--down" th:if="${noteError}" role="alert"><svg
-                        th:replace="~{fragments/icons :: icon('circle-x')}"></svg><span th:text="${noteError}"></span></p>
-                <div class="compose__foot">
-                    <span class="compose__count" data-count-for="public-note" aria-live="polite"
-                          th:text="${#strings.length(noteText) + ' / ' + noteMaxLength}">0 / 200</span>
-                    <button class="button button--primary" type="submit">Save public note</button>
+
+            <section id="note" class="admin-section" aria-labelledby="public-note-title">
+                <div class="admin-section__head">
+                    <h2 id="public-note-title" class="section-title">Public note</h2>
+                    <form th:if="${hasNote}" method="post" th:action="@{/admin/services/{id}/note/delete(id=${service.id})}"
+                          data-confirm="Remove this public note? It disappears from the status page right away.">
+                        <button class="button button--ghost button--small button--danger" type="submit">Remove public note</button>
+                    </form>
                 </div>
-            </form>
-        </section>
-        <section id="published-note" class="admin-section" aria-labelledby="published-note-title">
-            <h2 id="published-note-title" class="section-title">Showing now</h2>
-            <p class="empty" th:unless="${hasNote}">No public outage note is showing for this service.</p>
-            <div class="notices" th:if="${hasNote}">
-                <p class="notice"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span
-                        class="public-note" th:text="${publishedNote}">We are investigating the outage.</span></p>
-            </div>
-        </section>
-        <h2>Admin diagnostics</h2>
-        <dl>
-            <dt>Monitoring target</dt>
-            <dd th:text="${#strings.isEmpty(service.description) ? 'Not configured' : service.description}">https://example.test</dd>
-            <dt>Consecutive failures before reporting down</dt>
-            <dd th:text="${service.retryThreshold}">3</dd>
-        </dl>
-        <p>The monitor saves the first result and subsequent status changes. These messages are not live check results; an error may change while a service remains down.</p>
-        <p th:if="${latestLog == null}">No monitoring results recorded yet.</p>
-        <section th:if="${latestLog != null}">
-            <h2>Latest recorded status</h2>
-            <dl th:replace="~{fragments/diagnostics :: logDetails(${latestLog})}"></dl>
-        </section>
-        <section th:unless="${#lists.isEmpty(history)}">
-            <h2>Recent status history</h2>
-            <p th:text="${'Up to ' + historyLimit + ' most recent records, newest first.'}"></p>
-            <ol>
-                <li th:each="log : ${history}">
-                    <dl th:replace="~{fragments/diagnostics :: logDetails(${log})}"></dl>
+                <p class="alert" th:if="${hasNote and latestLog != null and !down}">This service is working again. Remove the note when visitors no longer need it.</p>
+                <p class="notice" th:if="${noteSuccess}" role="status"><svg
+                        th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span th:text="${noteSuccess}"></span></p>
+                <p class="notice" th:if="${hasNote and noteError != null}"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span>Visitors still see:
+                        <span class="public-note" th:text="${publishedNote}">We are investigating the outage.</span></span></p>
+                <form class="compose" method="post" th:action="@{/admin/services/{id}/note(id=${service.id})}">
+                    <label class="field__label" for="public-note" th:text="${hasNote ? 'Visitors see this note' : 'Explain the outage to visitors'}">Explain the outage to visitors</label>
+                    <textarea class="input" id="public-note" name="description" rows="3" required
+                              placeholder="Example: Printing is unavailable while we replace the print server."
+                              th:maxlength="${noteMaxLength}" th:text="${noteText}"></textarea>
+                    <p class="alert status--down" th:if="${noteError}" role="alert"><svg
+                            th:replace="~{fragments/icons :: icon('circle-x')}"></svg><span th:text="${noteError}"></span></p>
+                    <div class="compose__foot">
+                        <span class="compose__count" data-count-for="public-note" aria-live="polite"
+                              th:text="${#strings.length(noteText) + ' / ' + noteMaxLength}">0 / 200</span>
+                        <button class="button button--primary" type="submit">Save public note</button>
+                    </div>
+                    <p class="compose__hint">Shows on the front page and the service's public page until you remove it, even after the service recovers.</p>
+                </form>
+            </section>
+        </th:block>
+
+        <section class="admin-section" th:unless="${#lists.isEmpty(history)}" aria-labelledby="history-log-title">
+            <h2 id="history-log-title" class="section-title">History</h2>
+            <p class="lede" th:text="${'Status changes, up to ' + historyLimit + ' most recent records, newest first.'}">Status changes, up to 50 most recent records, newest first.</p>
+            <ol class="diagnostics">
+                <li class="diagnostic" th:each="log : ${history}" th:with="down=${log.status == 'down'}" th:classappend="${down ? 'status--down' : ''}">
+                    <span class="diagnostic__status" th:text="${down ? 'Down' : 'Working'}">Down</span>
+                    <time class="diagnostic__time" th:datetime="|${log.date}T${log.time}|" th:text="|${log.day()}, ${log.clock()}|">Thu 5 Nov, 10:30</time>
+                    <span class="diagnostic__ms" th:text="${log.delay_ms != null ? log.delay_ms + ' ms' : 'Not recorded'}">125 ms</span>
+                    <p class="diagnostic__message" th:text="${#strings.isEmpty(log.message) ? 'No diagnostic message recorded.' : log.message}">HTTP Fault: 503</p>
                 </li>
             </ol>
+        </section>
+
+        <section class="admin-section" aria-labelledby="monitor-title">
+            <h2 id="monitor-title" class="section-title">Monitoring</h2>
+            <dl class="facts">
+                <dt>Target</dt>
+                <dd th:text="${#strings.isEmpty(service.description) ? 'Not configured' : service.description}">https://example.test</dd>
+                <dt>Down after</dt>
+                <dd th:text="${service.retryThreshold + ' failed checks in a row'}">3 failed checks in a row</dd>
+            </dl>
         </section>
     </main>
 </div>

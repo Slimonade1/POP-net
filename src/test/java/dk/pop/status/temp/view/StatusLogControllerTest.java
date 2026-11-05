@@ -149,7 +149,7 @@ class StatusLogControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("latestLog", recovery))
                 .andExpect(model().attribute("history", List.of(recovery, failure)))
-                .andExpect(content().string(containsString(">healthy</dd>")))
+                .andExpect(content().string(containsString(">Working since <time")))
                 .andExpect(content().string(containsString("HTTP 200 OK")))
                 .andExpect(content().string(containsString("HTTP Fault: 503")));
     }
