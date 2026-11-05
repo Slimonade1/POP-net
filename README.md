@@ -20,13 +20,9 @@ Start the database using the **Start MySQL** Docker Compose run configuration.
 It reads the passwords from `.env`. If IntelliJ asks, configure its Docker
 connection first and wait for the MySQL container to become healthy.
 
-The application run configuration must also receive the application password:
-
-1. Open **Run → Edit Configurations…** and select **TempApplication**.
-2. Choose **Modify options → Environment variables**.
-3. Add `DB_PASSWORD` with the same value as `DB_PASSWORD` in `.env` (without
-   quotation marks), then click **Apply** and **OK**.
-4. Run **TempApplication** after MySQL is healthy.
+Run **TempApplication** after MySQL is healthy. Spring reads the project-root
+`.env` file automatically, so the app uses the same `DB_PASSWORD` as Docker
+Compose without copying the password into an IntelliJ run configuration.
 
 ### Run from PowerShell
 
@@ -59,7 +55,11 @@ MySQL, waits until the database is healthy, and runs the app on port 8080, or
 the next free port if 8080 is taken. Stop the app with Ctrl+C; MySQL keeps
 running in the background until you run `docker compose down`.
 
-To do the same steps by hand:
+To start only MySQL for an IntelliJ run, load `.env` and start the Compose
+service. Then launch **TempApplication** from IntelliJ. Do not run `./run.sh`
+at the same time; it also starts the Java application.
+
+To do the full startup from the terminal:
 
 ```sh
 cp .env.example .env    # then set the two passwords
@@ -112,6 +112,18 @@ By default, the application connects to `jdbc:mysql://localhost:3307/popnet`
 as user `popnet`. Override `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` through
 environment variables to connect to a different MySQL server. The schema script
 in `src/main/resources/migrations` runs when the application starts.
+
+The log repository supports both the original `stats` / `duration_ms` columns
+and the `status` / `delay_ms` columns used by newer installations. It detects
+the existing names for reads and writes, so the diagnostics and public-note
+features require no log-column migration. Databases already upgraded by the
+earlier migration are also supported, including logs saved in either duration
+column. Restart the app after changing database columns so it detects them again.
+
+The only remaining schema upgrade in `0002` adds `services.retry_threshold`
+when missing. This field stores the per-service retry settings from the
+existing retry-threshold feature. It preserves existing data and does nothing
+on subsequent starts once the field exists.
 
 Admins can open **Service diagnostics** at `/admin/services` to see the latest
 recorded status and diagnostic message for each database service. Select a

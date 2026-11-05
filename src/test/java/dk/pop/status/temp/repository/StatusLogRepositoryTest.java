@@ -3,6 +3,8 @@ package dk.pop.status.temp.repository;
 import dk.pop.status.temp.domain.StatusLog;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -73,6 +75,50 @@ class StatusLogRepositoryTest {
         var expected = new StatusLog(1L, "Shared name", "down", null, null, null, null);
         assertThat(repository.findLatestByService().get(1L)).isEqualTo(expected);
         assertThat(repository.findRecentByServiceId(1, 50)).containsExactly(expected);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"original", "current", "previously-migrated"})
+    void readsAndWritesLogsWithoutChangingTheExistingColumnNames(String layout) throws Exception {
+        if (layout.equals("original")) {
+            jdbc.execute("ALTER TABLE status_logs RENAME COLUMN status TO stats");
+            jdbc.execute("ALTER TABLE status_logs RENAME COLUMN delay_ms TO duration_ms");
+            jdbc.execute("ALTER TABLE status_logs ALTER COLUMN duration_ms BIGINT");
+        } else if (layout.equals("previously-migrated")) {
+            jdbc.execute("ALTER TABLE status_logs ADD COLUMN duration_ms BIGINT");
+        }
+        var log = new StatusLog(null, "Unchecked", "down", LocalTime.of(10, 30),
+                LocalDate.of(2026, 11, 5), "HTTP Fault: 503", 123);
+
+        try {
+            repository.begin();
+            repository.create(log);
+            repository.commit();
+        } finally {
+            repository.close();
+        }
+
+        var saved = repository.findLatestByService().get(3L);
+        assertThat(saved.message()).isEqualTo("HTTP Fault: 503");
+        assertThat(saved.status()).isEqualTo("down");
+        assertThat(saved.delay_ms()).isEqualTo(123);
+        assertThat(repository.findRecentByServiceId(3, 50)).containsExactly(saved);
+        String durationColumn = layout.equals("current") ? "delay_ms" : "duration_ms";
+        assertThat(jdbc.queryForObject("SELECT " + durationColumn + " FROM status_logs WHERE service_id = 3", Long.class))
+                .isEqualTo(123L);
+    }
+
+    @Test
+    void previouslyMigratedDatabaseCanReadHistoricalDurationsFromEitherColumn() {
+        jdbc.execute("ALTER TABLE status_logs ADD COLUMN duration_ms BIGINT");
+        jdbc.update("""
+                INSERT INTO status_logs (id, service_id, status, delay_ms, duration_ms)
+                VALUES (1, 1, 'down', 200, NULL), (2, 2, 'down', NULL, 300)
+                """);
+
+        var latest = repository.findLatestByService();
+        assertThat(latest.get(1L).delay_ms()).isEqualTo(200);
+        assertThat(latest.get(2L).delay_ms()).isEqualTo(300);
     }
 
     private void insertLog(long id, long serviceId, String status, String date, String time, String message) {
