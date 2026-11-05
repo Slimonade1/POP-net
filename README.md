@@ -112,6 +112,23 @@ as user `popnet`. Override `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` through
 environment variables to connect to a different MySQL server. The schema script
 in `src/main/resources/migrations` runs when the application starts.
 
+Admins can open **Service diagnostics** at `/admin/services` to see the latest
+recorded status and diagnostic message for each database service. Select a
+service to see its monitoring target and up to 50 recent status records, newest
+first. These pages require an admin login and use real database logs even when
+the public status pages show example data. The monitor records its first result
+and subsequent status changes, so the displayed error is the saved diagnostic
+from that event, not necessarily the latest check. Stored diagnostics are
+currently limited to 200 characters. The pages use basic HTML within the
+existing admin layout so their presentation can be developed separately.
+
+The diagnostics tests use an isolated H2 database and rendered MVC pages. Run
+them without starting MySQL:
+
+```sh
+./mvnw -Dtest=StatusLogRepositoryTest,StatusLogControllerTest test
+```
+
 Status changes can send emails to the recipients configured under the
 **Email notifications** tab in the admin UI. Add the SMTP account that should
 send notifications to `.env` as `SMTP_USERNAME`, and its SMTP credential as

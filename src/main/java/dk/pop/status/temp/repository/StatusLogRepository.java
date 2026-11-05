@@ -6,13 +6,82 @@ import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Repository
 public class StatusLogRepository implements UnitOfWork {
     private final DataSource dataSource;
 
     private final ThreadLocal<Connection> connectionHolder = new ThreadLocal<>();
+
+    public Map<Long, StatusLog> findLatestByService() {
+        var sql = """
+                SELECT l.*, s.name AS service_name
+                FROM services s
+                JOIN status_logs l ON l.id = (
+                    SELECT recent.id FROM status_logs recent
+                    WHERE recent.service_id = s.id
+                    ORDER BY recent.date DESC, recent.time DESC, recent.id DESC
+                    LIMIT 1
+                )
+                """;
+
+        try (var connection = dataSource.getConnection();
+             var statement = connection.prepareStatement(sql);
+             var results = statement.executeQuery()) {
+            Map<Long, StatusLog> logs = new HashMap<>();
+            while (results.next()) {
+                logs.put(results.getLong("service_id"), readLog(results));
+            }
+            return logs;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to read latest status logs", e);
+        }
+    }
+
+    public List<StatusLog> findRecentByServiceId(long serviceId, int limit) {
+        var sql = """
+                SELECT l.*, s.name AS service_name
+                FROM status_logs l
+                JOIN services s ON s.id = l.service_id
+                WHERE l.service_id = ?
+                ORDER BY l.date DESC, l.time DESC, l.id DESC
+                LIMIT ?
+                """;
+
+        try (var connection = dataSource.getConnection();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, serviceId);
+            statement.setInt(2, limit);
+            try (var results = statement.executeQuery()) {
+                List<StatusLog> logs = new ArrayList<>();
+                while (results.next()) {
+                    logs.add(readLog(results));
+                }
+                return logs;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to read service status history", e);
+        }
+    }
+
+    private static StatusLog readLog(ResultSet results) throws SQLException {
+        return new StatusLog(
+                results.getLong("id"),
+                results.getString("service_name"),
+                results.getString("status"),
+                results.getObject("time", LocalTime.class),
+                results.getObject("date", LocalDate.class),
+                results.getString("message"),
+                results.getObject("delay_ms", Integer.class));
+    }
 
     public void create(StatusLog statusLog) {
         var findServiceId = "SELECT id FROM services WHERE name = ?";
