@@ -16,14 +16,14 @@ INSERT IGNORE INTO services (id, name, description) VALUES
 (7, 'Server John IPv6', 'icmp://[2a03:19c0:8005:6000:1]'),
 
 -- Web Services
-(8, 'POP Booking Heartbeat', 'https://pop.dk'),
-(9, 'POP Main Website', 'https://pop.dk'),
-(10, 'POP WordPress Login', 'https://pop.dk'),
+(8, 'POP Booking Heartbeat', 'https://book.pop.dk/api/heartbeat'),
+(9, 'POP Main Website 1', 'https://pop.dk'),
+(10, 'POP Main Website Wordpress login', 'https://pop.dk/wp-login.php'),
 (11, 'POP Web Public Domain', 'https://www.pop.dk'),
 (12, 'Network Monitor Service', 'https://nms.pop.dk'),
-(13, 'POP Print Portal', 'https://pop.dk'),
+(13, 'POP Print Portal', 'https://print.pop.dk/login'),
 (14, 'Self-service Redirection', 'https://self-service.pop.dk'),
-(15, 'Reset Password Gateway', 'https://k-net.dk'),
-(16, 'Password Manager Config', 'https://pop.dk'),
-(17, 'Password Manager Alive', 'https://pop.dk'),
+(15, 'Reset Password Gateway', 'https://reset.k-net.dk/heartbeat'),
+(16, 'Password Manager Config', 'https://pass.pop.dk/api/config'),
+(17, 'Password Manager Alive', 'https://pass.pop.dk/alive'),
 (18, 'Netgrp Wiki Knowledgebase', 'https://wiki.pop.dk');
