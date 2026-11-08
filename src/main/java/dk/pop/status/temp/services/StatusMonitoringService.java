@@ -167,12 +167,27 @@ public class StatusMonitoringService {
         String diagnosticMessage;
 
         try {
-            ProcessBuilder pb = isWindows 
-                ? new ProcessBuilder("ping", "-n", "1", "-w", "1000", cleanHost)
-                : new ProcessBuilder("ping", "-c", "1", "-W", "1", cleanHost);
+            String os = System.getProperty("os.name").toLowerCase();
+            boolean isMac = os.contains("mac");
+            boolean isIpv6 = cleanHost.contains(":");
+
+            ProcessBuilder pb;
+            if (isWindows) {
+                pb = new ProcessBuilder("ping", "-n", "1", "-w", "1000", cleanHost);
+            } else if (isMac && isIpv6) {
+                pb = new ProcessBuilder("ping6", "-c", "1", cleanHost);
+            } else if (isMac) {
+                pb = new ProcessBuilder("ping", "-c", "1", "-t", "1", cleanHost);
+            } else {
+                pb = new ProcessBuilder("ping", "-c", "1", "-W", "1", cleanHost);
+            }
 
             Process process = pb.start();
-            int exitCode = process.waitFor();
+            boolean finished = process.waitFor(2, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+            }
+            int exitCode = finished ? process.exitValue() : -1;
 
             if (exitCode == 0) {
                 healthy = true;
