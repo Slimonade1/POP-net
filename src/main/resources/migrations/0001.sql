@@ -13,7 +13,7 @@ INSERT IGNORE INTO services (id, name, description) VALUES
 (4, 'Server Jane', 'icmp://jane.pop.dk'),
 (5, 'Server John Core', 'icmp://john.pop.dk'),
 (6, 'Server John Alt-IP', 'icmp://82.211.200.8'),
-(7, 'Server John IPv6', 'icmp://[2a03:19c0:8005:6000:1]'),
+(7, 'Server John IPv6', 'icmp://[2a03:19c0:8005:6000::1]'),
 
 -- Web Services
 (8, 'POP Booking Heartbeat', 'https://book.pop.dk/api/heartbeat'),
