@@ -9,11 +9,7 @@ import org.springframework.web.context.annotation.RequestScope;
 import javax.sql.DataSource;
 import java.sql.Connection;
 
-import java.sql.Connection;
 import java.sql.SQLException;
-import javax.sql.DataSource;
-
-import static java.sql.DriverManager.getConnection;
 
 @Repository
 @RequestScope

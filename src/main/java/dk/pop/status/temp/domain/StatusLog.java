@@ -7,7 +7,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 public record StatusLog(
-        Long id,
         String service_name,
         String status,
         LocalTime checkedAtTime,
