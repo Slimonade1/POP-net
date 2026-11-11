@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -81,6 +83,8 @@ public class StatusMonitoringService {
                 executor.submit(() -> checkIcmp(service, targetPath, isWindows));
             } else if (service.isWeb()) {
                 executor.submit(() -> checkHttp(service, targetPath));
+            } else if (service.isScript()) {
+                executor.submit(() -> checkScript(service, targetPath));
             }
         }
 
@@ -203,6 +207,45 @@ public class StatusMonitoringService {
 
         int durationMs = (int) ((System.nanoTime() - startTime) / 1_000_000);
         saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage, durationMs);
+    }
+
+    private void checkScript(ServiceEntity service, String targetPath) {
+        long startTime = System.nanoTime();
+        String scriptPath = targetPath.replace("script://", "");
+
+        boolean healthy;
+        String diagnosticMessage;
+
+        try {
+            ProcessBuilder pb = new ProcessBuilder("bash", scriptPath);
+            Process process = pb.start();
+            boolean finished = process.waitFor(10, TimeUnit.SECONDS);   // waits at most 10 seconds
+
+            if (!finished) {                // If not finished in 10 seconds it kills script and counts as down
+                process.destroyForcibly();
+                healthy = false;
+                diagnosticMessage = "Script timed out";
+            } else {
+                String firstLine;       // script finished in time, reading first line of output
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream()))) {
+                    firstLine = reader.readLine();
+                }
+                if (process.exitValue() == 0) {     // exit code 0 = healthy
+                    healthy = true;
+                    diagnosticMessage = firstLine != null ? firstLine : "Script OK";
+                } else {
+                    healthy = false;         // every other exit code = down
+                    diagnosticMessage = firstLine != null ? firstLine : "Script exited with code " + process.exitValue();
+                }
+            }
+        } catch (Exception e) {
+            healthy = false;
+            diagnosticMessage = e.getMessage() != null ? e.getMessage() : "Script could not run";
+        }
+
+        int durationMs = (int) ((System.nanoTime() - startTime) / 1_000_000);       // how long it took in ms
+        saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage, durationMs);     // saving result
     }
 
     private void saveLogEntry(ServiceEntity service, String currentStatus, String msg, int latency) {
