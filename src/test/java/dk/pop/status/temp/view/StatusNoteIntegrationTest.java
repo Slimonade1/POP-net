@@ -1,5 +1,6 @@
 package dk.pop.status.temp.view;
 
+import dk.pop.status.temp.domain.StatusNote;
 import dk.pop.status.temp.repository.StatusNoteRepository;
 import dk.pop.status.temp.services.StatusMonitoringService;
 import dk.pop.status.temp.services.StatusNoteService;
@@ -69,10 +70,8 @@ class StatusNoteIntegrationTest {
                         .with(user("admin").roles("ADMIN")).with(csrf())
                         .param("description", "  Printing is unavailable.\nWe are replacing the server.  "))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin/services/901"))
-                .andExpect(flash().attribute("noteSuccess", "Public note saved."));
+                .andExpect(redirectedUrl("/admin/services/901#note"));
 
-        // Read the saved value from the database rather than the submitted form/model.
         assertThat(notes.findLatestByServiceId(901).orElseThrow().description())
                 .isEqualTo("Printing is unavailable.\nWe are replacing the server.");
         for (String path : new String[]{"/", "/services/id/901"}) {
@@ -88,48 +87,72 @@ class StatusNoteIntegrationTest {
         mvc.perform(get("/admin/services/901").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Printing is unavailable.")))
-                .andExpect(content().string(containsString("Remove public note")))
+                .andExpect(content().string(containsString("Showing now")))
                 .andExpect(content().string(containsString("name=\"_csrf\"")));
     }
 
     @Test
-    void editingAndRemovingANoteOnlyAffectsTheSelectedService() throws Exception {
-        noteService.save(901, "Original print update");
-        noteService.save(902, "Website maintenance");
+    void newNotesStackAndOnlyTheNewestIsPublic() throws Exception {
+        noteService.add(901, "Original print update");
+        noteService.add(902, "Website maintenance");
 
         mvc.perform(post("/admin/services/901/note")
                         .with(user("admin").roles("ADMIN")).with(csrf())
                         .param("description", "Printing is restored"))
-                .andExpect(redirectedUrl("/admin/services/901"));
+                .andExpect(redirectedUrl("/admin/services/901#note"));
 
-        assertThat(notes.findAll()).hasSize(2);
-        assertThat(notes.findLatestByServiceId(901).orElseThrow().description()).isEqualTo("Printing is restored");
+        assertThat(notes.findAll()).hasSize(3);
+        assertThat(notes.findAllByServiceId(901)).extracting(StatusNote::description)
+                .containsExactly("Printing is restored", "Original print update");
         mvc.perform(get("/services/id/901"))
                 .andExpect(content().string(containsString("Printing is restored")))
                 .andExpect(content().string(not(containsString("Original print update"))));
+        mvc.perform(get("/admin/services/901").with(user("admin").roles("ADMIN")))
+                .andExpect(content().string(containsString("Printing is restored")))
+                .andExpect(content().string(containsString("Original print update")));
+    }
+
+    @Test
+    void deletingANoteRemovesOnlyThatNote() throws Exception {
+        noteService.add(901, "Original print update");
+        noteService.add(901, "Printing is restored");
+        noteService.add(902, "Website maintenance");
+        long newest = notes.findLatestByServiceId(901).orElseThrow().id();
+        long website = notes.findLatestByServiceId(902).orElseThrow().id();
 
         mvc.perform(post("/admin/services/901/note/delete")
-                        .with(user("admin").roles("ADMIN")).with(csrf()))
-                .andExpect(redirectedUrl("/admin/services/901"));
+                        .with(user("admin").roles("ADMIN")).with(csrf())
+                        .param("noteId", String.valueOf(website)))
+                .andExpect(redirectedUrl("/admin/services/901#note"));
+        assertThat(notes.findAll()).hasSize(3);
 
-        assertThat(notes.findLatestByServiceId(901)).isEmpty();
+        mvc.perform(post("/admin/services/901/note/delete")
+                        .with(user("admin").roles("ADMIN")).with(csrf())
+                        .param("noteId", String.valueOf(newest)))
+                .andExpect(redirectedUrl("/admin/services/901#note"));
+
+        assertThat(notes.findAllByServiceId(901)).extracting(StatusNote::description)
+                .containsExactly("Original print update");
         assertThat(notes.findLatestByServiceId(902).orElseThrow().description()).isEqualTo("Website maintenance");
-        mvc.perform(get("/"))
-                .andExpect(content().string(containsString("Website maintenance")))
+        mvc.perform(get("/services/id/901"))
+                .andExpect(content().string(containsString("Original print update")))
                 .andExpect(content().string(not(containsString("Printing is restored"))));
+
+        long last = notes.findLatestByServiceId(901).orElseThrow().id();
+        noteService.delete(901, last);
         mvc.perform(get("/services/id/901"))
                 .andExpect(content().string(containsString("No public note has been posted for this service.")));
     }
 
     @Test
     void invalidInputKeepsThePublishedNoteAndRedisplaysTheDraft() throws Exception {
-        noteService.save(901, "Existing public note");
+        noteService.add(901, "Existing public note");
         String oversized = "x".repeat(201);
 
         var result = mvc.perform(post("/admin/services/901/note")
                         .with(user("admin").roles("ADMIN")).with(csrf())
                         .param("description", oversized))
-                .andExpect(redirectedUrl("/admin/services/901"))
+                .andExpect(redirectedUrl("/admin/services/901#note"))
                 .andExpect(flash().attribute("noteError", "Public notes must be 200 characters or fewer."))
                 .andExpect(flash().attribute("noteText", oversized))
                 .andReturn();
@@ -138,7 +161,6 @@ class StatusNoteIntegrationTest {
                         .flashAttrs(result.getFlashMap()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(oversized)))
-                .andExpect(model().attribute("publishedNote", "Existing public note"))
                 .andExpect(content().string(containsString("class=\"public-note\">Existing public note</span>")))
                 .andExpect(content().string(containsString("Public notes must be 200 characters or fewer.")));
         assertThat(notes.findLatestByServiceId(901).orElseThrow().description()).isEqualTo("Existing public note");
@@ -151,7 +173,7 @@ class StatusNoteIntegrationTest {
 
     @Test
     void adminOverviewShowsPublishedNotesAndUpdatesAfterRemoval() throws Exception {
-        noteService.save(901, "Printing unavailable during maintenance");
+        noteService.add(901, "Printing unavailable during maintenance");
 
         mvc.perform(get("/admin").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
@@ -160,7 +182,7 @@ class StatusNoteIntegrationTest {
                 .andExpect(content().string(containsString("Printing unavailable during maintenance")))
                 .andExpect(content().string(containsString("href=\"/admin/services/901\"")));
 
-        noteService.delete(901);
+        noteService.delete(901, notes.findLatestByServiceId(901).orElseThrow().id());
 
         mvc.perform(get("/admin").with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
@@ -171,7 +193,7 @@ class StatusNoteIntegrationTest {
     @Test
     void publicNotesAndEditorEscapeHtml() throws Exception {
         String text = "<script>alert('test')</script>";
-        noteService.save(901, text);
+        noteService.add(901, text);
 
         for (String path : new String[]{"/", "/services/id/901"}) {
             mvc.perform(get(path))
@@ -186,7 +208,7 @@ class StatusNoteIntegrationTest {
 
     @Test
     void onlyAdminsWithCsrfTokensCanChangeNotes() throws Exception {
-        noteService.save(901, "Keep this note");
+        noteService.add(901, "Keep this note");
         for (String path : new String[]{"/admin/services/901/note", "/admin/services/901/note/delete"}) {
             mvc.perform(post(path).with(csrf()).param("description", "Unauthorized change"))
                     .andExpect(status().is3xxRedirection())
@@ -210,14 +232,15 @@ class StatusNoteIntegrationTest {
                         .param("description", "Unknown service"))
                 .andExpect(status().isNotFound());
         mvc.perform(post("/admin/services/999/note/delete")
-                        .with(user("admin").roles("ADMIN")).with(csrf()))
+                        .with(user("admin").roles("ADMIN")).with(csrf())
+                        .param("noteId", "1"))
                 .andExpect(status().isNotFound());
         assertThat(notes.findAll()).isEmpty();
     }
 
     @Test
     void noteRemainsPublishedAfterRecoveryUntilAnAdminRemovesIt() throws Exception {
-        noteService.save(901, "Printing was interrupted during maintenance.");
+        noteService.add(901, "Printing was interrupted during maintenance.");
         jdbc.update("""
                 INSERT INTO status_logs (service_id, status, date, time, message)
                 VALUES (901, 'healthy', '2026-11-05', '11:00:00', 'HTTP 200 OK')

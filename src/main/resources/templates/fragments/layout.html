@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${title}">POP status</title>
-    <link rel="icon" href="https://raw.githubusercontent.com/netgrp/logo/main/pop-opti-nofont.svg">
+    <link rel="icon" th:href="@{/images/pop-logo.svg}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
@@ -15,8 +15,7 @@
 
 <header class="site-header" th:fragment="header">
     <a class="brand" href="/" th:href="@{/}">
-        <img class="brand__logo" src="https://raw.githubusercontent.com/netgrp/logo/main/pop-opti-nofont.svg"
-             alt="POP Kollegiet" width="56" height="28">
+        <svg th:replace="~{fragments/logo :: logo('brand__logo')}"></svg>
         <span class="brand__name">Status</span>
     </a>
     <a class="button button--ghost button--small" href="mailto:netgrp@pop.dk"><svg
@@ -26,8 +25,7 @@
 <div class="admin-header" role="banner" th:fragment="adminHeader(active)">
     <div class="admin-header__top">
         <a class="brand" th:href="@{/admin}">
-            <img class="brand__logo" src="https://raw.githubusercontent.com/netgrp/logo/main/pop-opti-nofont.svg"
-                 alt="POP Kollegiet" width="56" height="28">
+            <svg th:replace="~{fragments/logo :: logo('brand__logo')}"></svg>
             <span class="brand__name">Admin</span>
         </a>
         <form method="post" th:action="@{/logout}">

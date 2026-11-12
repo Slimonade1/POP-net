@@ -20,20 +20,12 @@
             </div>
 
             <section id="note" class="admin-section" aria-labelledby="public-note-title">
-                <div class="admin-section__head">
-                    <h2 id="public-note-title" class="section-title">Public note</h2>
-                    <form th:if="${hasNote}" method="post" th:action="@{/admin/services/{id}/note/delete(id=${service.id})}"
-                          data-confirm="Remove this public note? It disappears from the status page right away.">
-                        <button class="button button--ghost button--small button--danger" type="submit">Remove public note</button>
-                    </form>
-                </div>
-                <p class="alert" th:if="${hasNote and latestLog != null and !down}">This service is working again. Remove the note when visitors no longer need it.</p>
-                <p class="notice" th:if="${noteSuccess}" role="status"><svg
-                        th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span th:text="${noteSuccess}"></span></p>
-                <p class="notice" th:if="${hasNote and noteError != null}"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span>Visitors still see:
-                        <span class="public-note" th:text="${publishedNote}">We are investigating the outage.</span></span></p>
+                <h2 id="public-note-title" class="section-title">Public notes
+                    <span class="count" th:text="${#lists.size(notes)}">1</span></h2>
+                <p class="lede">Visitors see the newest note on the front page and the service's public page, even after the service recovers. Older notes stay here until you delete them.</p>
+                <p class="alert" th:if="${!#lists.isEmpty(notes) and latestLog != null and !down}">This service is working again. Delete the note when visitors no longer need it.</p>
                 <form class="compose" method="post" th:action="@{/admin/services/{id}/note(id=${service.id})}">
-                    <label class="field__label" for="public-note" th:text="${hasNote ? 'Visitors see this note' : 'Explain the outage to visitors'}">Explain the outage to visitors</label>
+                    <label class="field__label" for="public-note">New note</label>
                     <textarea class="input" id="public-note" name="description" rows="3" required
                               placeholder="Example: Printing is unavailable while we replace the print server."
                               th:maxlength="${noteMaxLength}" th:text="${noteText}"></textarea>
@@ -42,10 +34,22 @@
                     <div class="compose__foot">
                         <span class="compose__count" data-count-for="public-note" aria-live="polite"
                               th:text="${#strings.length(noteText) + ' / ' + noteMaxLength}">0 / 200</span>
-                        <button class="button button--primary" type="submit">Save public note</button>
+                        <button class="button button--primary" type="submit">Post note</button>
                     </div>
-                    <p class="compose__hint">Shows on the front page and the service's public page until you remove it, even after the service recovers.</p>
                 </form>
+                <p class="empty" th:if="${#lists.isEmpty(notes)}">No notes posted. Visitors see no note for this service.</p>
+                <ul class="posted" th:unless="${#lists.isEmpty(notes)}">
+                    <li class="notice" th:each="note, it : ${notes}" th:classappend="${it.first ? 'notice--current' : 'notice--old'}">
+                        <svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg>
+                        <span class="posted__text"><span class="posted__tag" th:text="${it.first ? 'Showing now' : 'Hidden'}">Showing now</span>
+                            <span class="public-note" th:text="${note.description}">We are investigating the outage.</span></span>
+                        <form method="post" th:action="@{/admin/services/{id}/note/delete(id=${service.id})}"
+                              th:attr="data-confirm=${it.first ? 'Delete this note? Visitors see the next newest note instead, or none.' : 'Delete this older note?'}">
+                            <input type="hidden" name="noteId" th:value="${note.id}">
+                            <button class="button button--ghost button--small button--danger" type="submit">Delete</button>
+                        </form>
+                    </li>
+                </ul>
             </section>
         </th:block>
 

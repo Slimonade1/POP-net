@@ -33,6 +33,10 @@ public class StatusNoteService {
         return notes.findLatestByServiceId(serviceId);
     }
 
+    public List<StatusNote> findAllByServiceId(long serviceId) {
+        return notes.findAllByServiceId(serviceId);
+    }
+
     public List<PublicService> findPublicNotes() {
         Map<Long, StatusNote> byService = notes.findLatestByService().stream()
                 .collect(Collectors.toMap(StatusNote::serviceId, Function.identity()));
@@ -50,17 +54,15 @@ public class StatusNoteService {
     }
 
     @Transactional
-    public void save(long serviceId, String description) {
+    public void add(long serviceId, String description) {
         String normalized = StatusNoteUtils.normalize(description);
-        // Serialize writes per service so simultaneous saves still leave one current note.
-        services.findByIdForUpdate(serviceId).orElseThrow();
-        notes.deleteByServiceId(serviceId);
+        services.findById(serviceId).orElseThrow();
         notes.save(new StatusNote(null, normalized, serviceId));
     }
 
     @Transactional
-    public void delete(long serviceId) {
-        services.findByIdForUpdate(serviceId).orElseThrow();
-        notes.deleteByServiceId(serviceId);
+    public void delete(long serviceId, long noteId) {
+        services.findById(serviceId).orElseThrow();
+        notes.deleteByIdAndServiceId(noteId, serviceId);
     }
 }

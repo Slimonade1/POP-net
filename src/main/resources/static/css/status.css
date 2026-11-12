@@ -35,10 +35,6 @@
         --sick-text: #f0a830;
         --down-text: #f07a73;
     }
-
-    .brand__logo {
-        filter: invert(1);
-    }
 }
 
 .status--sick { --status: var(--sick); --status-text: var(--sick-text); }
@@ -1034,6 +1030,22 @@ a {
     margin: 0;
 }
 
+.posted__tag {
+    display: block;
+    margin-bottom: 0.15rem;
+    color: var(--quiet);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.notice--current .posted__tag {
+    color: var(--ok-text);
+}
+
+.notice--old .public-note {
+    color: var(--quiet);
+}
+
 .thresholds {
     display: grid;
     gap: 0.5rem;
@@ -1307,12 +1319,6 @@ a {
 
 .detail-status p {
     margin: 0;
-}
-
-.compose__hint {
-    margin: 0.5rem 0 0;
-    color: var(--quiet);
-    font-size: 0.875rem;
 }
 
 @media (max-width: 40rem) {

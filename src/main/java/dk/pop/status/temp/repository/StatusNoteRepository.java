@@ -18,7 +18,10 @@ public interface StatusNoteRepository extends ListCrudRepository<StatusNote, Lon
             """)
     List<StatusNote> findLatestByService();
 
+    @Query("SELECT * FROM status_notes WHERE service_id = :serviceId ORDER BY id DESC")
+    List<StatusNote> findAllByServiceId(long serviceId);
+
     @Modifying
-    @Query("DELETE FROM status_notes WHERE service_id = :serviceId")
-    void deleteByServiceId(long serviceId);
+    @Query("DELETE FROM status_notes WHERE id = :id AND service_id = :serviceId")
+    int deleteByIdAndServiceId(long id, long serviceId);
 }
