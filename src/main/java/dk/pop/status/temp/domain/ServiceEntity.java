@@ -17,4 +17,8 @@ public record ServiceEntity(
     public boolean isWeb() {
         return description != null && (description.startsWith("http://") || description.startsWith("https://"));
     }
+
+    public boolean isScript() {
+        return description != null && description.startsWith("script://");
+    }
 }
