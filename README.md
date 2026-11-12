@@ -2,6 +2,25 @@
 
 A small Spring MVC status-message board backed by MySQL.
 
+## Local script check example
+
+`scripts/check-ping.sh` performs one ping to `1.1.1.1`, prints a short message,
+and exits with `0` for success or `1` for failure. It requires the Linux/BusyBox
+`ping` command. Public ICMP traffic may be blocked by your network.
+
+Run it manually from the repository root with `bash scripts/check-ping.sh`.
+To monitor it, add a service to the database:
+
+```sql
+INSERT INTO services (name, description, retry_threshold)
+VALUES ('Local script demo', 'script://scripts/check-ping.sh', 3);
+```
+
+Start the app from the repository root so the relative script path resolves.
+The existing monitor runs the script in its regular rounds and applies the
+service's retry threshold. The script itself does not loop. For a server
+deployment, use an absolute address such as `script:///opt/pop-net/scripts/check-ping.sh`.
+
 ## Run locally
 
 Create a local `.env` file from the example and choose passwords:
