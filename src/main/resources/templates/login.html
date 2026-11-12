@@ -3,8 +3,7 @@
 <head th:replace="~{fragments/layout :: head('Admin login, POP status')}"></head>
 <body>
 <main class="auth">
-    <img class="brand__logo auth__logo" src="https://raw.githubusercontent.com/netgrp/logo/main/pop-opti-nofont.svg"
-         alt="POP Kollegiet" width="56" height="28">
+    <svg th:replace="~{fragments/logo :: logo(true)}"></svg>
     <h1 class="auth__title">Admin login</h1>
     <p class="auth__lede">For the network group at POP.</p>
 

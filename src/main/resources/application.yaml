@@ -25,6 +25,16 @@ spring:
     url: ${DB_URL:jdbc:mysql://localhost:3307/popnet}
     username: ${DB_USERNAME:popnet}
     password: ${DB_PASSWORD}
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 365d
+      chain:
+        strategy:
+          content:
+            enabled: true
+            paths: /**
   sql:
     init:
       mode: always
