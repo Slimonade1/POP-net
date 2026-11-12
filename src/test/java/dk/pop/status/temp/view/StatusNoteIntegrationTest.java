@@ -250,4 +250,13 @@ class StatusNoteIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Printing was interrupted during maintenance.")));
     }
+
+    @Test
+    void loginAndPublicPagesRenderTheLogo() throws Exception {
+        for (String path : new String[]{"/login", "/"}) {
+            mvc.perform(get(path))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("aria-label=\"POP Kollegiet\"")));
+        }
+    }
 }

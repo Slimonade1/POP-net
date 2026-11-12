@@ -15,7 +15,7 @@
 
 <header class="site-header" th:fragment="header">
     <a class="brand" href="/" th:href="@{/}">
-        <svg th:replace="~{fragments/logo :: logo('brand__logo')}"></svg>
+        <svg th:replace="~{fragments/logo :: logo(false)}"></svg>
         <span class="brand__name">Status</span>
     </a>
     <a class="button button--ghost button--small" href="mailto:netgrp@pop.dk"><svg
@@ -25,7 +25,7 @@
 <div class="admin-header" role="banner" th:fragment="adminHeader(active)">
     <div class="admin-header__top">
         <a class="brand" th:href="@{/admin}">
-            <svg th:replace="~{fragments/logo :: logo('brand__logo')}"></svg>
+            <svg th:replace="~{fragments/logo :: logo(false)}"></svg>
             <span class="brand__name">Admin</span>
         </a>
         <form method="post" th:action="@{/logout}">
