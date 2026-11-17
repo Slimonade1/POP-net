@@ -4,7 +4,7 @@ services:
     environment:
       JAVA_OPTS_APPEND: "-Xms128m -Xmx300m -XX:MaxMetaspaceSize=180m"
     ports: !override
-      - "127.0.0.1:8180:8080"
+      - "[::1]:8182:8080"
 
   mysql:
     mem_limit: 256m
