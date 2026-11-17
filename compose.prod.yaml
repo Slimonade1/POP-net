@@ -1,26 +1,57 @@
 services:
   keycloak:
+    image: quay.io/keycloak/keycloak:26.3.3
+    command: start-dev --import-realm
     mem_limit: 520m
     environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HEALTH_ENABLED: "true"
       JAVA_OPTS_APPEND: "-Xms128m -Xmx300m -XX:MaxMetaspaceSize=180m"
-    ports: !override
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HOSTNAME: https://status.test.pop.dk/auth
+      KC_PROXY_HEADERS: xforwarded
+    ports:
       - "[::1]:8182:8080"
+    volumes:
+      - ./keycloak/realm:/opt/keycloak/data/import:ro
+    healthcheck:
+      test: ["CMD", "/usr/bin/bash", "-c", "exec 3<>/dev/tcp/localhost/9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
 
   mysql:
+    image: mysql:8.4
     mem_limit: 256m
     command: --innodb-buffer-pool-size=64M --performance-schema=OFF
-    ports: !override
+    environment:
+      MYSQL_DATABASE: popnet
+      MYSQL_USER: popnet
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD before starting Compose}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD before starting Compose}
+    ports:
       - "127.0.0.1:3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   app:
     build: .
     mem_limit: 320m
     restart: unless-stopped
+    extra_hosts:
+      - "status.test.pop.dk:host-gateway"
     env_file:
       - .env
     environment:
       DB_URL: jdbc:mysql://mysql:3306/popnet
-      OIDC_ISSUER_URI: http://keycloak:8080/realms/popnet
+      OIDC_ISSUER_URI: https://status.test.pop.dk/auth/realms/popnet
       SERVER_PORT: 8082
       SERVER_FORWARD_HEADERS_STRATEGY: framework
     ports:
@@ -30,3 +61,6 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
+
+volumes:
+  mysql-data:
