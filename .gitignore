@@ -34,3 +34,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Compose Override for individual setups ###
+compose.override.yaml
