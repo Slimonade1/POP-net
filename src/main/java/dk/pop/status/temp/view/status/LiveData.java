@@ -61,7 +61,7 @@ public class LiveData implements StatusSource {
                 .sorted(Comparator.comparing(ServiceEntity::id))
                 .forEach(service -> {
                     groups.get(service.isWeb() ? WEB : NETWORK)
-                            .add(view(service, slugs.get(service.id()), history.getOrDefault(service.name(), List.of())));
+                            .add(view(service, slugs.get(service.id()), history.getOrDefault(service.name(), List.of()), now));
                 });
 
         return groups.entrySet().stream()
