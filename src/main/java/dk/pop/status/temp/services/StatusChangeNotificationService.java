@@ -5,9 +5,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class StatusChangeNotificationService {
     private final EmailNotificationService emailNotifications;
+    private final WebhookNotificationService webhookNotifications;
 
-    public StatusChangeNotificationService(EmailNotificationService emailNotifications) {
+    public StatusChangeNotificationService(EmailNotificationService emailNotifications,
+                                           WebhookNotificationService webhookNotifications) {
         this.emailNotifications = emailNotifications;
+        this.webhookNotifications = webhookNotifications;
     }
 
     public void notifyStatusChange(String serviceName, String previousStatus,
@@ -18,5 +21,6 @@ public class StatusChangeNotificationService {
         }
 
         emailNotifications.notifyStatusChange(serviceName, previousStatus, currentStatus, diagnosticMessage);
+        webhookNotifications.notifyStatusChange(serviceName, previousStatus, currentStatus, diagnosticMessage);
     }
 }
