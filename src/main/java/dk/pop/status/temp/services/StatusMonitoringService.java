@@ -37,7 +37,7 @@ public class StatusMonitoringService {
     private final ServiceEntityRepository serviceRepository;
     private final StatusLogRepository statusLogRepository;
     private final HealthStatusTracker healthStatusTracker;
-    private final EmailNotificationService emailNotificationService;
+    private final StatusChangeNotificationService statusChangeNotifications;
     private final ResponseTimeRepository responseTimes;
     
     private final Map<String, String> liveStatuses = new ConcurrentHashMap<>();
@@ -55,12 +55,12 @@ public class StatusMonitoringService {
             ServiceEntityRepository serviceRepository,
             StatusLogRepository statusLogRepository,
             HealthStatusTracker healthStatusTracker,
-            EmailNotificationService emailNotificationService,
+            StatusChangeNotificationService statusChangeNotifications,
             ResponseTimeRepository responseTimes) {
         this.serviceRepository = serviceRepository;
         this.statusLogRepository = statusLogRepository;
         this.healthStatusTracker = healthStatusTracker;
-        this.emailNotificationService = emailNotificationService;
+        this.statusChangeNotifications = statusChangeNotifications;
         this.responseTimes = responseTimes;
     }
 
@@ -283,10 +283,8 @@ public class StatusMonitoringService {
                 statusLogRepository.commit();          
                 previousStatuses.put(service.name(), currentStatus);
 
-                if (lastKnownStatus != null) {
-                    emailNotificationService.notifyStatusChange(
-                            service.name(), lastKnownStatus, currentStatus, sanitizedMessage);
-                }
+                statusChangeNotifications.notifyStatusChange(
+                        service.name(), lastKnownStatus, currentStatus, sanitizedMessage);
             } catch (Exception e) {
                 try { statusLogRepository.rollback(); } catch (Exception rbEx) { log.atError().log("UnitOfWork Rollback failed: " + rbEx.getMessage()); }
                 throw Log.giveUp(log, e, "Fatal status log data persistence infrastructure fault through Singleton context");
