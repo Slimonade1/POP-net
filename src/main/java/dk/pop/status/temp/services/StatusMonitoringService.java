@@ -281,15 +281,22 @@ public class StatusMonitoringService {
                 statusLogRepository.begin();           
                 statusLogRepository.create(logRecord);  
                 statusLogRepository.commit();          
-                previousStatuses.put(service.name(), currentStatus);
-
-                statusChangeNotifications.notifyStatusChange(
-                        service.name(), lastKnownStatus, currentStatus, sanitizedMessage);
             } catch (Exception e) {
                 try { statusLogRepository.rollback(); } catch (Exception rbEx) { log.atError().log("UnitOfWork Rollback failed: " + rbEx.getMessage()); }
                 throw Log.giveUp(log, e, "Fatal status log data persistence infrastructure fault through Singleton context");
             } finally {
                 try { statusLogRepository.close(); } catch (Exception clEx) { log.atError().log("UnitOfWork Connection close failed: " + clEx.getMessage()); }
+            }
+
+            // The change is committed and the database connection is released before delivery.
+            // Keep the new baseline even if notification delivery fails.
+            previousStatuses.put(service.name(), currentStatus);
+            try {
+                statusChangeNotifications.notifyStatusChange(
+                        service.name(), lastKnownStatus, currentStatus, sanitizedMessage);
+            } catch (RuntimeException e) {
+                log.atError().log("Could not deliver status change notifications for service '{}' ({})",
+                        service.name(), e.getClass().getSimpleName());
             }
         }
     }
