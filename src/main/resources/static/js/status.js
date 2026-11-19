@@ -96,9 +96,7 @@
         const incidents = incidentsIn(target, from, to).map((incident) => incidentLine(incident, from));
         if (target.classList.contains("strip")) {
             const heading = shares.shift() ?? labels[patternOf(target)[index]];
-            const latency = JSON.parse(target.dataset.latencies)[range][index];
-            const latencyLine = latency === null ? "No latency reading recorded" : `Latest saved latency: ${latency} ms`;
-            return [heading, label, latencyLine, ...shares, ...incidents];
+            return [heading, label, ...shares, ...incidents];
         }
         return [valueText(JSON.parse(target.dataset.values)[range][index]), label, ...shares, ...incidents];
     }
@@ -180,27 +178,21 @@
         const values = JSON.parse(chart.dataset.values)[range];
         const pattern = patternOf(chart);
         const height = chart.viewBox.baseVal.height;
-        const recordedValues = values.filter((value) => value !== null);
-        const max = niceCeiling(Math.max(0, ...recordedValues));
+        const max = niceCeiling(Math.max(...values.filter((value) => value !== null)));
 
-        const bars = [];
+        let path = "";
+        let drawing = false;
         values.forEach((value, index) => {
             if (value === null) {
+                drawing = false;
                 return;
             }
-            const box = cellBox(chart, index, values.length);
-            const bar = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            const x = cellBox(chart, index, values.length).center;
             const y = height - value / max * height;
-            bar.setAttribute("class", "chart__bar");
-            bar.setAttribute("x", box.x);
-            bar.setAttribute("y", y);
-            bar.setAttribute("width", box.width);
-            bar.setAttribute("height", height - y);
-            bars.push(bar);
+            path += `${drawing ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)} `;
+            drawing = true;
         });
-        chart.querySelector(".chart__bars").replaceChildren(...bars);
-        const empty = chart.querySelector(".chart__empty");
-        empty.hidden = recordedValues.length > 0;
+        chart.querySelector(".chart__line").setAttribute("d", path.trim());
 
         const bands = chart.querySelector(".chart__bands");
         bands.replaceChildren(...[...pattern].flatMap((status, index) => {

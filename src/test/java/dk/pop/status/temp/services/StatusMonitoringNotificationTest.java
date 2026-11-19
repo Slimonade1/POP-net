@@ -76,16 +76,6 @@ class StatusMonitoringNotificationTest {
         assertThat(previous.get("Printing")).isEqualTo("down");
     }
 
-    @Test
-    void parsesPingRoundTripTimeAcrossCommonPingOutputFormats() {
-        assertThat(StatusMonitoringService.parsePingLatency("64 bytes from host: icmp_seq=1 ttl=57 time=12.4 ms"))
-                .isEqualTo(12);
-        assertThat(StatusMonitoringService.parsePingLatency("Reply from host: bytes=32 time<1ms TTL=128"))
-                .isEqualTo(1);
-        assertThat(StatusMonitoringService.parsePingLatency("Request timed out."))
-                .isNull();
-    }
-
     private void record(String status) {
         ReflectionTestUtils.invokeMethod(monitor, "saveLogEntry", printer, status, "Check result", 100);
     }

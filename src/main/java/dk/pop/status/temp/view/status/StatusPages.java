@@ -44,7 +44,7 @@ public class StatusPages {
     }
 
     public record Row(String name, String slug, Status status, String note, String noteId, List<String> cells,
-                      String uptime, String uptimes, String patterns, String latencies, String incidents, String checked) {
+                      String uptime, String uptimes, String patterns, String incidents, String checked) {
     }
 
     public record GroupRows(String name, List<Row> rows) {
@@ -196,11 +196,9 @@ public class StatusPages {
     private static Row row(ServiceView service, ZonedDateTime now) {
         Map<String, Object> patterns = new LinkedHashMap<>();
         Map<String, Object> uptimes = new LinkedHashMap<>();
-        Map<String, Object> latencies = new LinkedHashMap<>();
         for (Range range : Range.values()) {
             patterns.put(range.key(), service.pattern(range, now));
             uptimes.put(range.key(), service.uptime(range, now));
-            latencies.put(range.key(), service.statusLatencies(range, now));
         }
         List<String> cells = service.pattern(DEFAULT, now).chars()
                 .mapToObj(code -> code == 'd' ? "down" : code == 's' ? "sick" : "operational")
@@ -218,7 +216,7 @@ public class StatusPages {
                 .orElse(stale(service) ? "Not checked since " + TIME.format(service.checkedAt()) + "." : null);
         return new Row(service.name(), service.slug(), service.current(), note,
                 ongoing.map(incident -> anchor(service, incident)).orElse(null), cells,
-                service.uptime(DEFAULT, now), Json.of(uptimes), Json.of(patterns), Json.of(latencies), Json.of(incidents),
+                service.uptime(DEFAULT, now), Json.of(uptimes), Json.of(patterns), Json.of(incidents),
                 checked(service));
     }
 

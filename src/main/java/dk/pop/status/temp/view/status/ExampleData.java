@@ -60,7 +60,7 @@ public class ExampleData implements StatusSource {
         return groups.stream()
                 .map(group -> new ServiceGroup(group.name(), group.services().stream()
                         .map(service -> new ServiceView(null, service.name(), service.slug(), service.hasLatency(),
-                                service.latencyMs(), service.incidents(), now, service.latencySamples()))
+                                service.latencyMs(), service.incidents(), now))
                         .toList()))
                 .toList();
     }
@@ -106,8 +106,7 @@ public class ExampleData implements StatusSource {
     }
 
     private static ServiceView service(String name, Integer latencyMs, ZonedDateTime start) {
-        return new ServiceView(null, name, ServiceView.slug(name), latencyMs != null, latencyMs,
-                incidents(name, start), start, List.of());
+        return new ServiceView(null, name, ServiceView.slug(name), latencyMs != null, latencyMs, incidents(name, start), start);
     }
 
     private static ServiceView withOngoing(ServiceView service, Incident incident) {
@@ -115,7 +114,7 @@ public class ExampleData implements StatusSource {
         incidents.add(incident);
         incidents.sort(Comparator.comparing(Incident::start));
         return new ServiceView(null, service.name(), service.slug(), service.hasLatency(), service.latencyMs(), incidents,
-                service.checkedAt(), service.latencySamples());
+                service.checkedAt());
     }
 
     private static List<Incident> incidents(String name, ZonedDateTime start) {
