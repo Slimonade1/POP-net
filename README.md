@@ -205,6 +205,8 @@ Saving again replaces the service's current note; **Remove public note**
 deletes it. Notes stay visible after recovery until edited or removed.
 
 Published notes appear under **Service updates** on the homepage and link to
-the service's public page at `/services/id/<id>`. They use database data and
+the service's existing public page at `/services/<name>`, alongside its status
+and incident history. Old `/services/id/<id>` links redirect to that page.
+Notes use database data and
 remain visible with `EXAMPLE_DATA=false`. Monitoring targets and technical
 diagnostics are available only on the admin pages.

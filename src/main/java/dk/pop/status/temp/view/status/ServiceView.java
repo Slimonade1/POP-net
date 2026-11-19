@@ -1,5 +1,6 @@
 package dk.pop.status.temp.view.status;
 
+import dk.pop.status.temp.utils.ServiceSlugUtils;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -60,6 +61,6 @@ public record ServiceView(Long id, String name, String slug, boolean hasLatency,
     }
 
     public static String slug(String name) {
-        return name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
+        return ServiceSlugUtils.slug(name);
     }
 }

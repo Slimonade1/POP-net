@@ -45,7 +45,7 @@ public class AdminController {
     public String adminPage(Principal principal, Model model) {
         model.addAttribute("username", principal.getName());
         model.addAttribute("notices", messages.findAll());
-        model.addAttribute("serviceNotes", notes.findPublicNotes());
+        model.addAttribute("serviceNotes", notes.findPublishedServiceNotes());
         return "admin";
     }
 

@@ -4,6 +4,7 @@ import dk.pop.status.temp.domain.StatusNote;
 import dk.pop.status.temp.repository.ServiceEntityRepository;
 import dk.pop.status.temp.repository.StatusNoteRepository;
 import dk.pop.status.temp.utils.StatusNoteUtils;
+import dk.pop.status.temp.utils.ServiceSlugUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +27,7 @@ public class  StatusNoteService {
     }
 
     // Public pages receive only the service name and the deliberately published note.
-    public record PublicService(long id, String name, String note) {
+    public record ServiceSummary(long id, String name, String slug, String note) {
     }
 
     public Optional<StatusNote> findByServiceId(long serviceId) {
@@ -37,20 +38,27 @@ public class  StatusNoteService {
         return notes.findAllByServiceId(serviceId);
     }
 
-    public List<PublicService> findPublicNotes() {
+    public List<ServiceSummary> findPublishedServiceNotes() {
         Map<Long, StatusNote> byService = notes.findLatestByService().stream()
                 .collect(Collectors.toMap(StatusNote::serviceId, Function.identity()));
-        return StreamSupport.stream(services.findAll().spliterator(), false)
-                .filter(service -> byService.containsKey(service.id()))
-                .map(service -> new PublicService(service.id(), service.name(), byService.get(service.id()).description()))
-                .sorted(Comparator.comparing(PublicService::name))
+        var allServices = StreamSupport.stream(services.findAll().spliterator(), false).toList();
+        Map<Long, String> slugs = ServiceSlugUtils.slugs(allServices);
+        return allServices.stream()
+                .filter(service -> byService.containsKey(service.id()) && slugs.containsKey(service.id()))
+                .map(service -> new ServiceSummary(service.id(), service.name(), slugs.get(service.id()),
+                        byService.get(service.id()).description()))
+                .sorted(Comparator.comparing(ServiceSummary::name))
                 .toList();
     }
 
-    public Optional<PublicService> findPublicService(long serviceId) {
+    public Optional<ServiceSummary> findServiceSummary(long serviceId) {
         return services.findById(serviceId)
-                .map(service -> new PublicService(service.id(), service.name(),
-                        findByServiceId(serviceId).map(StatusNote::description).orElse(null)));
+                .flatMap(service -> {
+                    String slug = ServiceSlugUtils.slugs(services.findAll()).get(serviceId);
+                    return slug == null ? Optional.empty() : Optional.of(new ServiceSummary(
+                            service.id(), service.name(), slug,
+                            findByServiceId(serviceId).map(StatusNote::description).orElse(null)));
+                });
     }
 
     @Transactional

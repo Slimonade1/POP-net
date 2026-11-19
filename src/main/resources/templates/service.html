@@ -16,6 +16,12 @@
         <a class="row__note now__note" th:if="${row.note() != null}" th:href="${row.noteId() != null ? '#' + row.noteId() : null}"
            th:title="${row.note()}" th:text="${row.note()}">Answering slowly.</a>
 
+        <section class="panel" aria-labelledby="note-title" th:if="${publicNote != null}">
+            <h2 id="note-title" class="section-title">From the network group</h2>
+            <p class="notice"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span
+                    class="public-note" th:text="${publicNote}">We are investigating the outage.</span></p>
+        </section>
+
         <section class="panel panel--history" aria-label="History">
             <div class="history__head">
                 <p class="uptime"><strong th:attr="data-uptime=${row.uptimes()}" th:text="${row.uptime()}">99.82 %</strong>
