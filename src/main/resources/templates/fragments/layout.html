@@ -52,7 +52,7 @@
 
 <div class="strip" th:fragment="strip(row)" role="img" tabindex="0"
      aria-label="Status over time, newest on the right. Use the arrow keys to read each slice."
-     th:attr="data-patterns=${row.patterns()},data-incidents=${row.incidents()}"><span class="strip__cell"
+     th:attr="data-patterns=${row.patterns()},data-latencies=${row.latencies()},data-incidents=${row.incidents()}"><span class="strip__cell"
         th:each="cell : ${row.cells()}" th:classappend="${'status--' + cell}"></span></div>
 
 <footer class="site-footer" th:fragment="footer">

@@ -37,6 +37,20 @@ The existing monitor runs the script in its regular rounds and applies the
 service's retry threshold. The script itself does not loop. For a server
 deployment, use an absolute address such as `script:///opt/pop-net/scripts/check-ping.sh`.
 
+## Change log
+
+| Date | Motivation | Description | Implications |
+|---|---|---|---|
+| Oct 8 | Establish the project foundation. | Created the project from the Spring Boot starter. | Provided the initial application structure for subsequent development. |
+| Oct 21–22 | Make the application runnable with a persistent database in local development. | Set up the Spring application, MySQL configuration, `.env`-based credentials, and local run instructions. | Developers can configure their own database credentials and run the application locally. |
+| Oct 29 | Start building the status-board experience and its supporting data model. | Added service, status-log, and service-note tables; homepage and service-page templates; demonstration data; and initial admin access. | The project gained public status pages, persisted service information, and a starting point for administrative features. |
+| Oct 30 | Check whether monitored services are reachable and retain the results. | Added ICMP and HTTPS monitoring, known service targets, and database-backed status logging. | Status data can be collected automatically and used by the application instead of relying only on demonstration content. |
+| Oct 31 | Avoid treating a single failed check as a service outage. | Added configurable retry thresholds to the monitoring and health-status logic. | Health changes can be based on repeated results, reducing status changes caused by transient failures. |
+| Nov 4 | Notify interested users of status changes and protect administrative access. | Added status-change email notifications and Keycloak-based admin authentication. | Notifications can be sent to configured recipients, and admin access uses the configured identity provider. |
+| Nov 5 | Make monitoring useful to visitors and administrators, and support existing databases. | Added admin diagnostics, public outage notes, tests, and a migration for existing installations; connected public pages to live status and response-time data; updated the interface and service addresses. | Administrators can investigate service history and publish outage context; public pages use monitored data, and existing installations can adopt the new schema. |
+| Nov 8 | Make ICMP monitoring work across supported operating systems and correct an IPv6 target. | Added macOS-specific ping commands and timeouts, including IPv6 handling, and corrected the Server John IPv6 address. | Monitoring can run on macOS as well as other supported systems, and the configured IPv6 target is valid. |
+| Nov 9 | Add service-focused persistence operations. | Added a service domain record, repository create and description-update operations, and a service-layer entry point; removed the status-log record ID field. | Service data now has create/update persistence operations, while status-log records no longer carry an ID in that domain representation. |
+
 ## Run locally
 
 Create a local `.env` file from the example and choose passwords:
@@ -129,7 +143,7 @@ They show every service in the `services` table that the ping service can
 check, sorted into network and servers and web services. The status, uptime, history strip
 and incidents come from the state changes the ping service writes to
 `status_logs`. Response times come from the `response_times` table, which gets
-one row per successful web check and forgets rows older than 15 days. A
+one row per successful web or ICMP check and forgets rows older than 15 days. A
 service page also says when the service was last checked.
 
 ### Example data

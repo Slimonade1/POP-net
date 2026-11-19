@@ -66,7 +66,7 @@ public class LiveData implements StatusSource {
                         slug = slug + "-" + service.id();
                     }
                     groups.get(service.isWeb() ? WEB : NETWORK)
-                            .add(view(service, slug, history.getOrDefault(service.name(), List.of())));
+                            .add(view(service, slug, history.getOrDefault(service.name(), List.of()), now));
                 });
 
         return groups.entrySet().stream()
@@ -104,11 +104,20 @@ public class LiveData implements StatusSource {
         return service.hasLatency() ? service.latencyMs() : null;
     }
 
-    private ServiceView view(ServiceEntity service, String slug, List<StatusLog> history) {
+    private ServiceView view(ServiceEntity service, String slug, List<StatusLog> history, ZonedDateTime now) {
         Instant checked = monitoring.getLastChecked().get(service.name());
-        return new ServiceView(service.id(), service.name(), slug, service.isWeb(),
+        List<ServiceView.LatencySample> latencySamples = List.of();
+        if (service.isWeb() || service.isIcmp()) {
+            ZonedDateTime from = Range.TWO_WEEKS.starts(now).getFirst();
+            latencySamples = responseTimes.hours(service.id(), local(from), local(now)).stream()
+                    .map(hour -> new ServiceView.LatencySample(hour.start().atZone(ZoneId.systemDefault())
+                            .withZoneSameInstant(StatusPages.ZONE),
+                            (int) Math.round((double) hour.total() / hour.checks())))
+                    .toList();
+        }
+        return new ServiceView(service.id(), service.name(), slug, service.isWeb() || service.isIcmp(),
                 monitoring.getLiveLatencies().get(service.name()), incidents(history),
-                checked == null ? null : checked.atZone(StatusPages.ZONE));
+                checked == null ? null : checked.atZone(StatusPages.ZONE), latencySamples);
     }
 
     static List<Incident> incidents(List<StatusLog> history) {

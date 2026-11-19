@@ -32,12 +32,13 @@
                      aria-label="Response time"
                      th:attr="data-values=${values},data-patterns=${row.patterns()},data-incidents=${row.incidents()}">
                     <g class="chart__bands"></g>
-                    <path class="chart__line" d=""></path>
+                    <g class="chart__bars"></g>
+                    <text class="chart__empty" x="360" y="100" text-anchor="middle" hidden>Waiting for latency readings</text>
                     <line class="chart__cross" x1="0" x2="0" y1="0" y2="200"></line>
                 </svg>
             </div>
             <p class="empty" th:unless="${service.hasLatency()}">
-                This service is checked from inside the network, so it has no response time.
+                No response-time data is available for this service.
             </p>
             <div th:replace="~{fragments/layout :: strip(${row})}"></div>
             <div class="axis" aria-hidden="true"><span data-axis-start th:text="${axisStart}">Thu 22 Oct</span><span>Now</span></div>
