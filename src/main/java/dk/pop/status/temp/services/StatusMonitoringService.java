@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -34,8 +33,6 @@ import java.util.concurrent.TimeUnit;
 public class StatusMonitoringService {
 
     private static final Logger log = Log.getLogger(StatusMonitoringService.class);
-    private static final java.util.regex.Pattern PING_LATENCY =
-            java.util.regex.Pattern.compile("(?i)time\\s*([<=>])\\s*([0-9]+(?:[.,][0-9]+)?)\\s*ms");
 
     private final ServiceEntityRepository serviceRepository;
     private final StatusLogRepository statusLogRepository;
@@ -172,7 +169,6 @@ public class StatusMonitoringService {
 
         boolean healthy;
         String diagnosticMessage;
-        Integer pingLatencyMs = null;
 
         try {
             String os = System.getProperty("os.name").toLowerCase();
@@ -190,24 +186,16 @@ public class StatusMonitoringService {
                 pb = new ProcessBuilder("ping", "-c", "1", "-W", "1", cleanHost);
             }
 
-            Process process = pb.redirectErrorStream(true).start();
+            Process process = pb.start();
             boolean finished = process.waitFor(2, TimeUnit.SECONDS);
             if (!finished) {
                 process.destroyForcibly();
-                process.waitFor();
             }
             int exitCode = finished ? process.exitValue() : -1;
-            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 
             if (exitCode == 0) {
                 healthy = true;
-                pingLatencyMs = parsePingLatency(output);
-                diagnosticMessage = pingLatencyMs == null
-                        ? "ICMP Alive Check Success; latency unavailable"
-                        : "ICMP Alive Check Success";
-                if (pingLatencyMs != null) {
-                    saveResponseTime(service, pingLatencyMs);
-                }
+                diagnosticMessage = "ICMP Alive Check Success";
             } else {
                 healthy = false;
                 diagnosticMessage = "Packet Loss Timeout Drop";
@@ -218,22 +206,7 @@ public class StatusMonitoringService {
         }
 
         int durationMs = (int) ((System.nanoTime() - startTime) / 1_000_000);
-        saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage,
-                pingLatencyMs == null ? durationMs : pingLatencyMs);
-        if (healthy && pingLatencyMs != null) {
-            liveLatencies.put(service.name(), pingLatencyMs);
-        } else {
-            liveLatencies.remove(service.name());
-        }
-    }
-
-    static Integer parsePingLatency(String output) {
-        var matcher = PING_LATENCY.matcher(output);
-        if (!matcher.find()) {
-            return null;
-        }
-        double latency = Double.parseDouble(matcher.group(2).replace(',', '.'));
-        return (int) Math.max(1, Math.round(latency));
+        saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage, durationMs);
     }
 
     private void checkScript(ServiceEntity service, String targetPath) {
