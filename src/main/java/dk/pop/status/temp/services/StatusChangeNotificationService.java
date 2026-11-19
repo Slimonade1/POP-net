@@ -1,9 +1,12 @@
 package dk.pop.status.temp.services;
 
 import org.springframework.stereotype.Service;
+import dk.pop.status.temp.utils.Log;
+import org.slf4j.Logger;
 
 @Service
 public class StatusChangeNotificationService {
+    private static final Logger log = Log.getLogger(StatusChangeNotificationService.class);
     private final EmailNotificationService emailNotifications;
     private final WebhookNotificationService webhookNotifications;
 
@@ -20,7 +23,17 @@ public class StatusChangeNotificationService {
             return;
         }
 
-        emailNotifications.notifyStatusChange(serviceName, previousStatus, currentStatus, diagnosticMessage);
-        webhookNotifications.notifyStatusChange(serviceName, previousStatus, currentStatus, diagnosticMessage);
+        try {
+            emailNotifications.notifyStatusChange(serviceName, previousStatus, currentStatus, diagnosticMessage);
+        } catch (RuntimeException e) {
+            log.atError().log("Email notification failed for service '{}' ({})",
+                    serviceName, e.getClass().getSimpleName());
+        }
+        try {
+            webhookNotifications.notifyStatusChange(serviceName, previousStatus, currentStatus, diagnosticMessage);
+        } catch (RuntimeException e) {
+            log.atError().log("Webhook notifications failed for service '{}' ({})",
+                    serviceName, e.getClass().getSimpleName());
+        }
     }
 }

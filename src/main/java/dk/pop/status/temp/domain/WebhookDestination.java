@@ -15,4 +15,9 @@ public record WebhookDestination(
         SLACK,
         DISCORD
     }
+
+    @Override
+    public String toString() {
+        return "WebhookDestination[id=" + id + ", provider=" + provider + ", enabled=" + enabled + ", url=[hidden]]";
+    }
 }

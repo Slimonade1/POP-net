@@ -3,16 +3,16 @@ package dk.pop.status.temp.services;
 import dk.pop.status.temp.domain.WebhookDestination;
 import dk.pop.status.temp.repository.WebhookDestinationRepository;
 import dk.pop.status.temp.utils.Log;
+import dk.pop.status.temp.utils.WebhookDestinationUtils;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.util.UriComponentsBuilder;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpTimeoutException;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
@@ -59,7 +59,7 @@ public class WebhookNotificationService {
                     case DISCORD -> Map.of("content", message,
                             "allowed_mentions", Map.of("parse", List.of()));
                 };
-                var request = HttpRequest.newBuilder(destinationUri(destination))
+                var request = HttpRequest.newBuilder(WebhookDestinationUtils.deliveryUri(destination.provider(), destination.url()))
                         .timeout(REQUEST_TIMEOUT)
                         .header("Content-Type", "application/json; charset=utf-8")
                         .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(payload)))
@@ -74,8 +74,12 @@ public class WebhookNotificationService {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.atError().log("Webhook delivery interrupted for destination {}", destination.id());
+                log.atError().log("Webhook delivery interrupted for destination {} ({}) and service '{}'",
+                        destination.id(), destination.provider(), serviceName);
                 return;
+            } catch (HttpTimeoutException e) {
+                log.atError().log("Webhook delivery timed out after {} seconds for destination {} ({}) and service '{}'",
+                        REQUEST_TIMEOUT.toSeconds(), destination.id(), destination.provider(), serviceName);
             } catch (IOException | RuntimeException e) {
                 // Exception messages and response bodies can contain the secret webhook URL.
                 log.atError().log("Webhook delivery failed for destination {} ({}) and service '{}' ({})",
@@ -84,28 +88,4 @@ public class WebhookNotificationService {
         }
     }
 
-    private static URI destinationUri(WebhookDestination destination) {
-        URI uri = URI.create(destination.url());
-        if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null
-                || uri.getUserInfo() != null || uri.getFragment() != null
-                || (uri.getPort() != -1 && uri.getPort() != 443)) {
-            throw new IllegalArgumentException("An HTTPS webhook URL is required.");
-        }
-
-        boolean valid = switch (destination.provider()) {
-            case SLACK -> ("hooks.slack.com".equalsIgnoreCase(uri.getHost())
-                    || "hooks.slack-gov.com".equalsIgnoreCase(uri.getHost()))
-                    && uri.getPath().matches("/services/[^/]+/[^/]+/[^/]+")
-                    && uri.getRawQuery() == null;
-            case DISCORD -> "discord.com".equalsIgnoreCase(uri.getHost())
-                    && uri.getPath().matches("/api(?:/v[0-9]+)?/webhooks/[0-9]+/[^/]+");
-        };
-        if (!valid) {
-            throw new IllegalArgumentException("The webhook URL does not match the selected provider.");
-        }
-        // Discord's default wait=false can omit errors for messages that were not saved.
-        return destination.provider() == WebhookDestination.Provider.DISCORD
-                ? UriComponentsBuilder.fromUri(uri).replaceQueryParam("wait", "true").build(true).toUri()
-                : uri;
-    }
 }

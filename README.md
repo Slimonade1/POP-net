@@ -2,6 +2,22 @@
 
 A small Spring MVC status-message board backed by MySQL.
 
+## Slack and Discord alerts
+
+Open **Admin → Webhooks** (`/admin/webhooks`) to add a named Slack or Discord
+incoming webhook URL. New destinations start disabled; click **Enable** to
+receive status-change alerts. You can edit, disable or remove a destination.
+Saved URLs are hidden; leave the replacement URL blank to keep the existing one.
+
+Alerts are attempted after a status change is saved, once the retry threshold
+has been reached. Recovery also sends an alert. The first observation establishes
+a baseline, and routine checks do not send alerts or retry failed deliveries.
+The startup migration creates the settings table without configuring a destination.
+
+Delivery failures appear in the application logs, including the destination ID,
+provider, affected service and HTTP status or error type. Email and webhook
+failures are handled independently. Webhook URLs and response bodies are not logged.
+
 ## Local script check example
 
 `scripts/check-ping.sh` performs one ping to `1.1.1.1`, prints a short message,

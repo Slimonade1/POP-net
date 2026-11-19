@@ -39,6 +39,7 @@
         <a th:href="@{/admin/services}" th:attr="aria-current=${active == 'diagnostics' ? 'page' : null}">Services</a>
         <a th:href="@{/retry-thresholds}" th:attr="aria-current=${active == 'thresholds' ? 'page' : null}">Thresholds</a>
         <a th:href="@{/email-notifications}" th:attr="aria-current=${active == 'email-notifications' ? 'page' : null}">Email</a>
+        <a th:href="@{/admin/webhooks}" th:attr="aria-current=${active == 'webhooks' ? 'page' : null}">Webhooks</a>
         <a class="admin-nav__out" th:href="@{/}">Status page<svg th:replace="~{fragments/icons :: icon('arrow-up-right')}"></svg></a>
     </nav>
 </div>

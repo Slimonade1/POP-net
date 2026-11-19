@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Webhook notifications, POP status')}"></head>
+<body>
+<div class="page">
+    <header th:replace="~{fragments/layout :: adminHeader('webhooks')}"></header>
+    <main class="admin">
+        <h1 class="admin__title">Webhook notifications</h1>
+        <p class="lede">Send service status changes to Slack or Discord.</p>
+        <p class="alert status--down" th:if="${error}" role="alert" th:text="${error}"></p>
+        <p class="notice" th:if="${success}" role="status" th:text="${success}"></p>
+
+        <form class="compose" method="post" th:action="@{/admin/webhooks}">
+            <h2 class="section-title">Add destination</h2>
+            <div class="field-stack">
+                <div class="field">
+                    <label class="field__label" for="webhook-name">Name</label>
+                    <input class="input" id="webhook-name" name="name" maxlength="100" required
+                           placeholder="Team alerts">
+                </div>
+                <div class="field">
+                    <label class="field__label" for="webhook-provider">Provider</label>
+                    <select class="input" id="webhook-provider" name="provider" required>
+                        <option value="">Choose a provider</option>
+                        <option th:each="provider : ${providers}" th:value="${provider}" th:text="${provider}"></option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label class="field__label" for="webhook-url">Webhook URL</label>
+                    <input class="input" id="webhook-url" name="url" type="password" maxlength="2048"
+                           autocomplete="new-password" required aria-describedby="webhook-url-help">
+                    <p id="webhook-url-help">Paste the HTTPS incoming webhook URL from Slack or Discord. It is stored privately and hidden after saving.</p>
+                </div>
+            </div>
+            <div class="compose__foot">
+                <span class="compose__count">New destinations are disabled until you enable them.</span>
+                <button class="button button--primary" type="submit">Add destination</button>
+            </div>
+        </form>
+
+        <section class="admin-section" aria-labelledby="destinations-title">
+            <h2 id="destinations-title" class="section-title">Destinations</h2>
+            <p class="empty" th:if="${#lists.isEmpty(destinations)}">No webhook destinations configured.</p>
+            <article class="panel" th:each="destination : ${destinations}">
+                <div class="admin-section__head">
+                    <h3 th:text="${destination.name}">Team alerts</h3>
+                    <span th:text="${destination.enabled ? 'Enabled' : 'Disabled'}">Disabled</span>
+                </div>
+                <form class="compose" method="post" th:action="@{/admin/webhooks/{id}/update(id=${destination.id})}">
+                    <div class="field-stack">
+                        <div class="field">
+                            <label class="field__label" th:for="${'name-' + destination.id}">Name</label>
+                            <input class="input" th:id="${'name-' + destination.id}" name="name" maxlength="100"
+                                   th:value="${destination.name}" required>
+                        </div>
+                        <div class="field">
+                            <label class="field__label" th:for="${'provider-' + destination.id}">Provider</label>
+                            <select class="input" th:id="${'provider-' + destination.id}" name="provider" required>
+                                <option th:each="provider : ${providers}" th:value="${provider}" th:text="${provider}"
+                                        th:selected="${provider == destination.provider}"></option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field__label" th:for="${'url-' + destination.id}">Replacement webhook URL</label>
+                            <input class="input" th:id="${'url-' + destination.id}" name="url" type="password"
+                                   maxlength="2048" autocomplete="new-password"
+                                   placeholder="Leave blank to keep the saved URL">
+                        </div>
+                    </div>
+                    <div class="compose__foot">
+                        <span></span>
+                        <button class="button button--primary button--small" type="submit">Save changes</button>
+                    </div>
+                </form>
+                <div class="admin-section__head">
+                    <form method="post" th:action="@{/admin/webhooks/{id}/enabled(id=${destination.id})}">
+                        <input type="hidden" name="enabled" th:value="${!destination.enabled}">
+                        <button class="button button--ghost button--small" type="submit"
+                                th:text="${destination.enabled ? 'Disable' : 'Enable'}">Enable</button>
+                    </form>
+                    <form method="post" th:action="@{/admin/webhooks/{id}/delete(id=${destination.id})}"
+                          data-confirm="Remove this webhook destination? It will stop receiving alerts.">
+                        <button class="button button--ghost button--small button--danger" type="submit">Remove</button>
+                    </form>
+                </div>
+            </article>
+        </section>
+        <p>Delivery failures are reported in the application logs with the destination ID, provider and affected service.
+            Alerts are attempted on status changes; routine checks do not resend failed alerts.</p>
+    </main>
+</div>
+<script th:src="@{/js/admin.js}" defer></script>
+</body>
+</html>
