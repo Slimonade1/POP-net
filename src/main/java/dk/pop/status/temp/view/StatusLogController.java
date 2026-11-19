@@ -6,13 +6,18 @@ import dk.pop.status.temp.repository.ServiceEntityRepository;
 import dk.pop.status.temp.services.StatusLogService;
 import dk.pop.status.temp.services.StatusNoteService;
 import dk.pop.status.temp.utils.StatusNoteUtils;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -71,5 +76,32 @@ public class StatusLogController {
         }
         model.addAttribute("noteMaxLength", StatusNoteUtils.MAX_NOTE_LENGTH);
         return "service-diagnostic-details";
+    }
+
+    @PostMapping("/services/{id}/export-data")
+    public ResponseEntity<String> exportDataToCsv(@PathVariable long id) {
+
+        List<StatusLog> statusLogs = logs.findSinceByServiceId(id, LocalDate.of(2026,11,18));
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("(" + id + ") Service Name,Date,Time,Status,delay_ms\n");
+        for (StatusLog statusLog : statusLogs) {
+            csv.append(statusLog.service_name()).append(",")
+                    .append(statusLog.date()).append(",")
+                    .append(statusLog.time()).append(",")
+                    .append(statusLog.status()).append(",")
+                    .append(statusLog.delay_ms()).append("\n");
+        }
+        String fileName = "TEMP";
+        try {
+            fileName = statusLogs.get(0).service_name() + " logs";
+        } catch (Exception e){
+            fileName = "NOFILESFOUND";
+        }
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + ".csv\"")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv.toString());
     }
 }

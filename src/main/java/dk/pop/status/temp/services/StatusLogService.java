@@ -4,6 +4,7 @@ import dk.pop.status.temp.domain.StatusLog;
 import dk.pop.status.temp.repository.StatusLogRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -27,4 +28,9 @@ public class StatusLogService {
     public List<StatusLog> findRecentByServiceId(long serviceId) {
         return repository.findRecentByServiceId(serviceId, HISTORY_LIMIT);
     }
+
+    public List<StatusLog> findSinceByServiceId(long serviceId, LocalDate from) {
+        return repository.findSinceByServiceId(serviceId, from);
+    }
+
 }

@@ -8,6 +8,12 @@
     <main th:classappend="${'status--' + row.status().css()}">
         <p class="back"><a class="button button--ghost button--small" th:href="@{/}"><svg
                 th:replace="~{fragments/icons :: icon('arrow-left')}"></svg>All services</a></p>
+        <form th:action="@{/services/{id}/export-data(id=${service.id})}" method="post">
+            <button type="submit" class="button">
+                Export data to CSV
+            </button>
+        </form>
+
         <h1 class="page-title" th:text="${row.name()}">POP Print</h1>
         <p class="empty" th:if="${example}">Example status preview: this page uses demonstration data.</p>
         <p class="now"><span class="now__status"><th:block th:if="${row.status().icon() != null}"><svg th:replace="~{fragments/icons :: icon(${row.status().icon()})}"></svg></th:block><th:block
