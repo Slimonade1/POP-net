@@ -29,7 +29,7 @@
             <h2 id="notices-title" class="visually-hidden">From the network group</h2>
             <p class="notice" th:each="notice : ${notices}"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span th:text="${notice.message}">Planned maintenance tonight.</span></p>
             <p class="notice" th:each="update : ${serviceUpdates}"><svg th:replace="~{fragments/icons :: icon('megaphone')}"></svg><span><a
-                    class="notice__service" th:href="@{/services/id/{id}(id=${update.id})}" th:text="${update.name}">POP Print</a>
+                    class="notice__service" th:href="@{/services/{slug}(slug=${update.slug})}" th:text="${update.name}">POP Print</a>
                 <span class="public-note" th:text="${update.note}">We are investigating the outage.</span></span></p>
         </section>
 
