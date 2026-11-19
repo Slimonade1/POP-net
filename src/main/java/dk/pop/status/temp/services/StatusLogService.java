@@ -16,8 +16,8 @@ public class StatusLogService {
         repository = statusLogRepository;
     }
 
-    public void createLog(StatusLog statusLog){
-        repository.create(statusLog);
+    public void createLog(StatusLog statusLog, long serviceId){
+        repository.create(statusLog, serviceId);
     }
 
     public Map<Long, StatusLog> findLatestByService() {
