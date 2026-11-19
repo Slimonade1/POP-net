@@ -2,6 +2,8 @@ package dk.pop.status.temp.view;
 
 import dk.pop.status.temp.domain.StatusNote;
 import dk.pop.status.temp.repository.StatusNoteRepository;
+import dk.pop.status.temp.repository.ResponseTimeRepository;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import dk.pop.status.temp.services.StatusMonitoringService;
 import dk.pop.status.temp.services.StatusNoteService;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +50,12 @@ class StatusNoteIntegrationTest {
     @MockitoBean
     private StatusMonitoringService monitoring;
 
+    @MockitoBean
+    private ResponseTimeRepository responseTimes;
+
+    @MockitoBean
+    private ClientRegistrationRepository clientRegistrations;
+
     @BeforeEach
     void setUp() {
         jdbc.update("DELETE FROM status_notes");
@@ -74,7 +82,7 @@ class StatusNoteIntegrationTest {
 
         assertThat(notes.findLatestByServiceId(901).orElseThrow().description())
                 .isEqualTo("Printing is unavailable.\nWe are replacing the server.");
-        for (String path : new String[]{"/", "/services/id/901"}) {
+        for (String path : new String[]{"/", "/services/print-server"}) {
             mvc.perform(get(path))
                     .andExpect(status().isOk())
                     .andExpect(content().string(containsString("Print server")))
@@ -92,6 +100,68 @@ class StatusNoteIntegrationTest {
     }
 
     @Test
+    void statusAndAdminNoteLinkToTheSameFullServicePage() throws Exception {
+        noteService.add(901, "Printing is unavailable during maintenance.");
+
+        var home = mvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("/services/id/"))))
+                .andReturn().getResponse().getContentAsString();
+        // The ongoing problem, status row and administrator note all point here.
+        assertThat(java.util.regex.Pattern.compile("href=\"/services/print-server\"")
+                .matcher(home).results().count()).isGreaterThanOrEqualTo(3);
+
+        mvc.perform(get("/services/print-server"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("service"))
+                .andExpect(content().string(containsString("Printing is unavailable during maintenance.")))
+                .andExpect(content().string(containsString("Not answering.")))
+                .andExpect(content().string(containsString("Incidents in the")))
+                .andExpect(content().string(not(containsString("Private diagnostic"))));
+        mvc.perform(get("/services/website"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("Printing is unavailable during maintenance."))));
+    }
+
+    @Test
+    void oldIdUrlsRedirectToTheCanonicalPageAndUnknownIdsReturnNotFound() throws Exception {
+        mvc.perform(get("/services/id/901"))
+                .andExpect(status().isMovedPermanently())
+                .andExpect(redirectedUrl("/services/print-server"));
+        mvc.perform(get("/services/id/999"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void sameNamedServicesDisplayTheirOwnNotesOnDifferentCanonicalPages() throws Exception {
+        jdbc.update("INSERT INTO services (id, name, description) VALUES (903, 'Print server', 'http://other-printer.test')");
+        noteService.add(901, "First printer update");
+        noteService.add(903, "Second printer update");
+
+        mvc.perform(get("/"))
+                .andExpect(content().string(containsString("href=\"/services/print-server-903\"")));
+        mvc.perform(get("/services/print-server"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("First printer update")))
+                .andExpect(content().string(not(containsString("Second printer update"))));
+        mvc.perform(get("/services/print-server-903"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Second printer update")))
+                .andExpect(content().string(not(containsString("First printer update"))));
+    }
+
+    @Test
+    void scriptCheckedServicesAlsoHaveACanonicalPageForTheirNotes() throws Exception {
+        jdbc.update("INSERT INTO services (id, name, description) VALUES (903, 'Local script demo', 'script://scripts/check-ping.sh')");
+        noteService.add(903, "We are investigating the local check.");
+
+        mvc.perform(get("/services/local-script-demo"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("service"))
+                .andExpect(content().string(containsString("We are investigating the local check.")));
+    }
+
+    @Test
     void newNotesStackAndOnlyTheNewestIsPublic() throws Exception {
         noteService.add(901, "Original print update");
         noteService.add(902, "Website maintenance");
@@ -104,7 +174,7 @@ class StatusNoteIntegrationTest {
         assertThat(notes.findAll()).hasSize(3);
         assertThat(notes.findAllByServiceId(901)).extracting(StatusNote::description)
                 .containsExactly("Printing is restored", "Original print update");
-        mvc.perform(get("/services/id/901"))
+        mvc.perform(get("/services/print-server"))
                 .andExpect(content().string(containsString("Printing is restored")))
                 .andExpect(content().string(not(containsString("Original print update"))));
         mvc.perform(get("/admin/services/901").with(user("admin").roles("ADMIN")))
@@ -134,14 +204,14 @@ class StatusNoteIntegrationTest {
         assertThat(notes.findAllByServiceId(901)).extracting(StatusNote::description)
                 .containsExactly("Original print update");
         assertThat(notes.findLatestByServiceId(902).orElseThrow().description()).isEqualTo("Website maintenance");
-        mvc.perform(get("/services/id/901"))
+        mvc.perform(get("/services/print-server"))
                 .andExpect(content().string(containsString("Original print update")))
                 .andExpect(content().string(not(containsString("Printing is restored"))));
 
         long last = notes.findLatestByServiceId(901).orElseThrow().id();
         noteService.delete(901, last);
-        mvc.perform(get("/services/id/901"))
-                .andExpect(content().string(containsString("No public note has been posted for this service.")));
+        mvc.perform(get("/services/print-server"))
+                .andExpect(content().string(not(containsString("id=\"note-title\""))));
     }
 
     @Test
@@ -195,7 +265,7 @@ class StatusNoteIntegrationTest {
         String text = "<script>alert('test')</script>";
         noteService.add(901, text);
 
-        for (String path : new String[]{"/", "/services/id/901"}) {
+        for (String path : new String[]{"/", "/services/print-server"}) {
             mvc.perform(get(path))
                     .andExpect(status().isOk())
                     .andExpect(content().string(containsString("&lt;script&gt;")))
@@ -225,7 +295,7 @@ class StatusNoteIntegrationTest {
 
     @Test
     void unknownServiceCannotBeReadOrGivenANote() throws Exception {
-        mvc.perform(get("/services/id/999"))
+        mvc.perform(get("/services/unknown-service"))
                 .andExpect(status().isNotFound());
         mvc.perform(post("/admin/services/999/note")
                         .with(user("admin").roles("ADMIN")).with(csrf())
@@ -246,7 +316,7 @@ class StatusNoteIntegrationTest {
                 VALUES (901, 'healthy', '2026-11-05', '11:00:00', 'HTTP 200 OK')
                 """);
 
-        mvc.perform(get("/services/id/901"))
+        mvc.perform(get("/services/print-server"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Printing was interrupted during maintenance.")));
     }

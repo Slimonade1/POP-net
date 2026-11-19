@@ -1,5 +1,7 @@
 package dk.pop.status.temp.view.status;
 
+import dk.pop.status.temp.domain.StatusNote;
+import dk.pop.status.temp.services.StatusNoteService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.Model;
@@ -30,10 +32,15 @@ public class StatusPages {
 
     private final StatusSource data;
     private final boolean example;
+    private final LiveData liveData;
+    private final StatusNoteService notes;
 
-    public StatusPages(ExampleData exampleData, LiveData liveData, @Value("${example-data:false}") boolean example) {
+    public StatusPages(ExampleData exampleData, LiveData liveData, @Value("${example-data:false}") boolean example,
+                       StatusNoteService notes) {
         this.data = example ? exampleData : liveData;
         this.example = example;
+        this.liveData = liveData;
+        this.notes = notes;
     }
 
     public record Row(String name, String slug, Status status, String note, String noteId, List<String> cells,
@@ -94,23 +101,32 @@ public class StatusPages {
 
     public boolean service(String slug, Model model) {
         ZonedDateTime now = now();
-        Optional<ServiceView> found = data.groups(now).stream()
+        // Database services take priority, including when the homepage shows example data.
+        StatusSource source = liveData;
+        Optional<ServiceView> found = source.groups(now).stream()
                 .flatMap(group -> group.services().stream())
                 .filter(service -> service.slug().equals(slug))
                 .findFirst();
+        if (found.isEmpty() && example) {
+            source = data;
+            found = source.groups(now).stream().flatMap(group -> group.services().stream())
+                    .filter(service -> service.slug().equals(slug)).findFirst();
+        }
         if (found.isEmpty()) {
             return false;
         }
         ServiceView service = found.get();
         Row row = row(service, now);
-        Integer latencyNow = data.latencyNow(service, now);
+        Integer latencyNow = source.latencyNow(service, now);
 
         Map<String, Object> values = new LinkedHashMap<>();
         for (Range range : Range.values()) {
-            values.put(range.key(), data.latencies(service, range, now));
+            values.put(range.key(), source.latencies(service, range, now));
         }
 
         model.addAttribute("service", service);
+        model.addAttribute("publicNote", service.id() == null ? null : notes.findByServiceId(service.id())
+                .map(StatusNote::description).orElse(null));
         model.addAttribute("row", row);
         model.addAttribute("nowText", nowText(row.status(), latencyNow));
         model.addAttribute("checkedText", checkedText(service.checkedAt()));
@@ -120,6 +136,7 @@ public class StatusPages {
                 .map(incident -> entry(service, incident, now, DAY_TIME))
                 .toList());
         addCommon(model, now);
+        model.addAttribute("example", source != liveData);
         return true;
     }
 

@@ -42,9 +42,9 @@ class StatusNoteServiceTest {
                 new StatusNote(10L, "Website maintenance", 1L),
                 new StatusNote(11L, "Backup is delayed", 2L)));
 
-        assertThat(service.findPublicNotes()).containsExactly(
-                new StatusNoteService.PublicService(2L, "Backup", "Backup is delayed"),
-                new StatusNoteService.PublicService(1L, "Website", "Website maintenance"));
+        assertThat(service.findPublishedServiceNotes()).containsExactly(
+                new StatusNoteService.ServiceSummary(2L, "Backup", "backup", "Backup is delayed"),
+                new StatusNoteService.ServiceSummary(1L, "Website", "website", "Website maintenance"));
     }
 
     @Test
@@ -56,26 +56,27 @@ class StatusNoteServiceTest {
                 new StatusNote(10L, "First printer is being replaced", 1L),
                 new StatusNote(11L, "Second printer is out of paper", 2L)));
 
-        assertThat(service.findPublicNotes()).containsExactlyInAnyOrder(
-                new StatusNoteService.PublicService(1L, "Print server", "First printer is being replaced"),
-                new StatusNoteService.PublicService(2L, "Print server", "Second printer is out of paper"));
+        assertThat(service.findPublishedServiceNotes()).containsExactlyInAnyOrder(
+                new StatusNoteService.ServiceSummary(1L, "Print server", "print-server", "First printer is being replaced"),
+                new StatusNoteService.ServiceSummary(2L, "Print server", "print-server-2", "Second printer is out of paper"));
     }
 
     @Test
     void knownServiceWithoutANoteStillHasAPublicPage() {
         given(services.findById(1L)).willReturn(Optional.of(
                 new ServiceEntity(1L, "Print server", "https://internal-print.test", 3)));
+        given(services.findAll()).willReturn(List.of(new ServiceEntity(1L, "Print server", "https://internal-print.test", 3)));
         given(notes.findLatestByServiceId(1L)).willReturn(Optional.empty());
 
-        assertThat(service.findPublicService(1L))
-                .contains(new StatusNoteService.PublicService(1L, "Print server", null));
+        assertThat(service.findServiceSummary(1L))
+                .contains(new StatusNoteService.ServiceSummary(1L, "Print server", "print-server", null));
     }
 
     @Test
     void unknownServiceHasNoPublicPage() {
         given(services.findById(99L)).willReturn(Optional.empty());
 
-        assertThat(service.findPublicService(99L)).isEmpty();
+        assertThat(service.findServiceSummary(99L)).isEmpty();
         verifyNoInteractions(notes);
     }
 }

@@ -6,6 +6,7 @@ import dk.pop.status.temp.repository.ResponseTimeRepository;
 import dk.pop.status.temp.repository.ServiceEntityRepository;
 import dk.pop.status.temp.repository.StatusLogRepository;
 import dk.pop.status.temp.services.StatusMonitoringService;
+import dk.pop.status.temp.utils.ServiceSlugUtils;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -15,11 +16,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.StreamSupport;
 
 @Component
@@ -47,21 +46,17 @@ public class LiveData implements StatusSource {
         Map<String, List<ServiceView>> groups = new LinkedHashMap<>();
         groups.put(NETWORK, new ArrayList<>());
         groups.put(WEB, new ArrayList<>());
-        Set<String> slugs = new HashSet<>();
-        StreamSupport.stream(services.findAll().spliterator(), false)
-                .filter(service -> service.name() != null && !service.name().isBlank())
-                .filter(service -> service.isIcmp() || service.isWeb())
+        var allServices = StreamSupport.stream(services.findAll().spliterator(), false).toList();
+        Map<Long, String> slugs = ServiceSlugUtils.slugs(allServices);
+        allServices.stream()
+                .filter(service -> slugs.containsKey(service.id()))
                 .sorted(Comparator.comparing(ServiceEntity::id))
                 .forEach(service -> {
-                    String slug = ServiceView.slug(service.name());
-                    if (!slugs.add(slug)) {
-                        slug = slug + "-" + service.id();
-                    }
                     List<StatusLog> history = new ArrayList<>();
                     history.addAll(logs.findLastBeforeByServiceId(service.id(), from));
                     history.addAll(logs.findSinceByServiceId(service.id(), from));
                     groups.get(service.isWeb() ? WEB : NETWORK)
-                            .add(view(service, slug, history));
+                            .add(view(service, slugs.get(service.id()), history));
                 });
 
         return groups.entrySet().stream()
