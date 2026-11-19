@@ -46,7 +46,7 @@ public class StatusLogController {
         down.addAll(others);
 
         Map<Long, String> noteText = new HashMap<>();
-        for (StatusNoteService.PublicService note : notes.findPublicNotes()) {
+        for (StatusNoteService.ServiceSummary note : notes.findPublishedServiceNotes()) {
             noteText.put(note.id(), note.note());
         }
 
