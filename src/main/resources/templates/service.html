@@ -24,7 +24,7 @@
 
         <section class="panel panel--history" aria-label="History">
             <div class="history__head">
-                <p class="uptime"><strong th:attr="data-uptime=${row.uptimes()}" th:text="${row.uptime()}">99.82 %</strong>
+                <p class="uptime"><strong th:attr="data-uptime=${row.uptimes()},data-has-latency=${row.hasLatency()},data-latency=${row.latencyMs()}" th:text="${row.uptime()}">99.82 %</strong>
                     <span>uptime in the <span data-period th:text="${period}">past week</span></span></p>
                 <div th:replace="~{fragments/layout :: ranges}"></div>
             </div>
