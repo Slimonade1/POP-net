@@ -28,11 +28,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class StatusMonitoringService {
 
     private static final Logger log = Log.getLogger(StatusMonitoringService.class);
+    private static final Pattern PING_TIME = Pattern.compile("(?i)time\\s*([=<])\\s*(\\d+(?:[.,]\\d+)?)\\s*ms");
 
     private final ServiceEntityRepository serviceRepository;
     private final StatusLogRepository statusLogRepository;
@@ -169,6 +172,7 @@ public class StatusMonitoringService {
 
         boolean healthy;
         String diagnosticMessage;
+        String output = "";
 
         try {
             String os = System.getProperty("os.name").toLowerCase();
@@ -185,6 +189,7 @@ public class StatusMonitoringService {
             } else {
                 pb = new ProcessBuilder("ping", "-c", "1", "-W", "1", cleanHost);
             }
+            pb.redirectErrorStream(true);
 
             Process process = pb.start();
             boolean finished = process.waitFor(2, TimeUnit.SECONDS);
@@ -196,6 +201,9 @@ public class StatusMonitoringService {
             if (exitCode == 0) {
                 healthy = true;
                 diagnosticMessage = "ICMP Alive Check Success";
+                try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    output = reader.lines().collect(java.util.stream.Collectors.joining("\n"));
+                }
             } else {
                 healthy = false;
                 diagnosticMessage = "Packet Loss Timeout Drop";
@@ -206,7 +214,26 @@ public class StatusMonitoringService {
         }
 
         int durationMs = (int) ((System.nanoTime() - startTime) / 1_000_000);
-        saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage, durationMs);
+        Integer pingLatency = healthy ? pingLatencyMs(output) : null;
+        if (pingLatency != null) {
+            saveResponseTime(service, pingLatency);
+        }
+        saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage,
+                pingLatency == null ? durationMs : pingLatency);
+        if (pingLatency == null) {
+            liveLatencies.remove(service.id());
+        } else {
+            liveLatencies.put(service.id(), pingLatency);
+        }
+    }
+
+    static Integer pingLatencyMs(String output) {
+        Matcher matcher = PING_TIME.matcher(output);
+        if (!matcher.find()) {
+            return null;
+        }
+        double milliseconds = Double.parseDouble(matcher.group(2).replace(',', '.'));
+        return (int) Math.max(1, Math.round(milliseconds));
     }
 
     private void checkScript(ServiceEntity service, String targetPath) {

@@ -87,7 +87,7 @@
     }
 
     function valueText(value) {
-        return value === null ? "No answer" : `${value} ms`;
+        return value === null ? "Nothing recorded" : `Average latency: ${value} ms`;
     }
 
     function describe(target, index) {
@@ -96,7 +96,13 @@
         const incidents = incidentsIn(target, from, to).map((incident) => incidentLine(incident, from));
         if (target.classList.contains("strip")) {
             const heading = shares.shift() ?? labels[patternOf(target)[index]];
-            return [heading, label, ...shares, ...incidents];
+            const latencyValues = target.dataset.hasLatency === "true"
+                ? JSON.parse(target.dataset.latencies)[range]
+                : null;
+            const latency = latencyValues?.[index];
+            const latencyLine = latencyValues === null ? []
+                : [latency == null ? "Nothing recorded for latency" : `Average latency: ${latency} ms`];
+            return [heading, label, ...shares, ...latencyLine, ...incidents];
         }
         return [valueText(JSON.parse(target.dataset.values)[range][index]), label, ...shares, ...incidents];
     }
@@ -236,7 +242,19 @@
         }
         document.querySelectorAll("[data-period]").forEach((el) => el.textContent = data.ranges[name].period);
         document.querySelectorAll("[data-axis-start]").forEach((el) => el.textContent = data.ranges[name].axisStart);
-        document.querySelectorAll("[data-uptime]").forEach((el) => el.textContent = JSON.parse(el.dataset.uptime)[name]);
+        document.querySelectorAll("[data-uptime]").forEach((el) => {
+            const uptime = JSON.parse(el.dataset.uptime)[name];
+            el.textContent = uptime;
+            if (el.dataset.hasLatency === undefined) {
+                return;
+            }
+            const latency = el.dataset.latency;
+            const detail = el.dataset.hasLatency !== "true" ? "Latency is not available for this service."
+                : latency ? `Current latency: ${latency} ms.` : "Nothing recorded for latency yet.";
+            const title = `Uptime in the ${data.ranges[name].period}: ${uptime}. ${detail}`;
+            el.title = title;
+            el.setAttribute("aria-label", title);
+        });
         document.querySelectorAll(".strip[data-patterns]").forEach(drawStrip);
         document.querySelectorAll(".chart__plot[data-values]").forEach(drawChart);
         filterIncidents();

@@ -22,6 +22,24 @@ class StatusPagesTest {
     @Mock private StatusNoteService notes;
 
     @Test
+    void homeRowsIncludeCurrentLatencyForTheUptimeHover() {
+        var service = new ServiceView(7L, "Web service", "web-service", true, 42, List.of(), null);
+        when(examples.groups(any())).thenReturn(List.of(new ServiceGroup("Web", List.of(service))));
+        when(examples.latencyNow(eq(service), any())).thenReturn(42);
+        when(examples.latencies(eq(service), any(), any())).thenReturn(List.of(42));
+        var model = new ExtendedModelMap();
+
+        new StatusPages(examples, live, true, notes).home(model);
+
+        @SuppressWarnings("unchecked")
+        List<StatusPages.GroupRows> groups = (List<StatusPages.GroupRows>) model.get("groups");
+        StatusPages.Row row = groups.getFirst().rows().getFirst();
+        assertThat(row.hasLatency()).isTrue();
+        assertThat(row.latencyMs()).isEqualTo(42);
+        assertThat(row.latencies()).contains("\"week\":[42]");
+    }
+
+    @Test
     void realServiceNotesUseTheExistingPageEvenWhenExampleModeIsEnabled() {
         var service = new ServiceView(7L, "Management VPN Gateway", "management-vpn-gateway",
                 false, null, List.of(), null);

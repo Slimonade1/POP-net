@@ -44,7 +44,8 @@ public class StatusPages {
     }
 
     public record Row(String name, String slug, Status status, String note, String noteId, List<String> cells,
-                      String uptime, String uptimes, String patterns, String incidents, String checked) {
+                      String uptime, String uptimes, String patterns, String incidents, String latencies, String checked,
+                      boolean hasLatency, Integer latencyMs) {
     }
 
     public record GroupRows(String name, List<Row> rows) {
@@ -64,7 +65,7 @@ public class StatusPages {
         ZonedDateTime now = now();
         List<ServiceGroup> sources = data.groups(now);
         List<GroupRows> groups = sources.stream()
-                .map(group -> new GroupRows(group.name(), group.services().stream().map(s -> row(s, now)).toList()))
+                .map(group -> new GroupRows(group.name(), group.services().stream().map(s -> row(s, now, data)).toList()))
                 .toList();
         List<Row> problems = groups.stream()
                 .flatMap(group -> group.rows().stream())
@@ -116,13 +117,8 @@ public class StatusPages {
             return false;
         }
         ServiceView service = found.get();
-        Row row = row(service, now);
-        Integer latencyNow = source.latencyNow(service, now);
-
-        Map<String, Object> values = new LinkedHashMap<>();
-        for (Range range : Range.values()) {
-            values.put(range.key(), source.latencies(service, range, now));
-        }
+        Row row = row(service, now, source);
+        Integer latencyNow = row.latencyMs();
 
         model.addAttribute("service", service);
         model.addAttribute("publicNote", service.id() == null ? null : notes.findByServiceId(service.id())
@@ -130,7 +126,7 @@ public class StatusPages {
         model.addAttribute("row", row);
         model.addAttribute("nowText", nowText(row.status(), latencyNow));
         model.addAttribute("checkedText", checkedText(service.checkedAt()));
-        model.addAttribute("values", Json.of(values));
+        model.addAttribute("values", row.latencies());
         model.addAttribute("incidents", service.incidents().stream()
                 .sorted(Comparator.comparing(Incident::start).reversed())
                 .map(incident -> entry(service, incident, now, DAY_TIME))
@@ -193,12 +189,16 @@ public class StatusPages {
                 && Duration.between(service.checkedAt(), ZonedDateTime.now(ZONE)).compareTo(STALE) > 0;
     }
 
-    private static Row row(ServiceView service, ZonedDateTime now) {
+    private static Row row(ServiceView service, ZonedDateTime now, StatusSource source) {
         Map<String, Object> patterns = new LinkedHashMap<>();
         Map<String, Object> uptimes = new LinkedHashMap<>();
+        Map<String, Object> latencies = new LinkedHashMap<>();
         for (Range range : Range.values()) {
             patterns.put(range.key(), service.pattern(range, now));
             uptimes.put(range.key(), service.uptime(range, now));
+            if (service.hasLatency()) {
+                latencies.put(range.key(), source.latencies(service, range, now));
+            }
         }
         List<String> cells = service.pattern(DEFAULT, now).chars()
                 .mapToObj(code -> code == 'd' ? "down" : code == 's' ? "sick" : "operational")
@@ -216,8 +216,8 @@ public class StatusPages {
                 .orElse(stale(service) ? "Not checked since " + TIME.format(service.checkedAt()) + "." : null);
         return new Row(service.name(), service.slug(), service.current(), note,
                 ongoing.map(incident -> anchor(service, incident)).orElse(null), cells,
-                service.uptime(DEFAULT, now), Json.of(uptimes), Json.of(patterns), Json.of(incidents),
-                checked(service));
+                service.uptime(DEFAULT, now), Json.of(uptimes), Json.of(patterns), Json.of(incidents), Json.of(latencies),
+                checked(service), service.hasLatency(), source.latencyNow(service, now));
     }
 
     private static Entry entry(ServiceView service, Incident incident, ZonedDateTime now, DateTimeFormatter when) {

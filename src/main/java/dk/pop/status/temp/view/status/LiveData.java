@@ -96,7 +96,7 @@ public class LiveData implements StatusSource {
 
     private ServiceView view(ServiceEntity service, String slug, List<StatusLog> history) {
         Instant checked = monitoring.getLastChecked().get(service.id());
-        return new ServiceView(service.id(), service.name(), slug, service.isWeb(),
+        return new ServiceView(service.id(), service.name(), slug, service.isWeb() || service.isIcmp(),
                 monitoring.getLiveLatencies().get(service.id()), incidents(history),
                 checked == null ? null : checked.atZone(StatusPages.ZONE));
     }
