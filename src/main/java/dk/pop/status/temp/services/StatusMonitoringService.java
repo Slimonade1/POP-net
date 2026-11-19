@@ -40,10 +40,10 @@ public class StatusMonitoringService {
     private final StatusChangeNotificationService statusChangeNotifications;
     private final ResponseTimeRepository responseTimes;
     
-    private final Map<String, String> liveStatuses = new ConcurrentHashMap<>();
-    private final Map<String, Integer> liveLatencies = new ConcurrentHashMap<>();
-    private final Map<String, String> previousStatuses = new ConcurrentHashMap<>();
-    private final Map<String, Instant> lastChecked = new ConcurrentHashMap<>();
+    private final Map<Long, String> liveStatuses = new ConcurrentHashMap<>();
+    private final Map<Long, Integer> liveLatencies = new ConcurrentHashMap<>();
+    private final Map<Long, String> previousStatuses = new ConcurrentHashMap<>();
+    private final Map<Long, Instant> lastChecked = new ConcurrentHashMap<>();
     private boolean rememberedLastStatuses;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -127,7 +127,7 @@ public class StatusMonitoringService {
         }
         saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage, durationMs);
         if (!healthy) {
-            liveLatencies.remove(service.name());
+            liveLatencies.remove(service.id());
         }
     }
 
@@ -137,7 +137,7 @@ public class StatusMonitoringService {
         }
         try {
             for (Map.Entry<Long, StatusLog> last : statusLogRepository.findLatestByService().entrySet()) {
-                previousStatuses.put(last.getValue().service_name(), last.getValue().status());
+                previousStatuses.put(last.getKey(), last.getValue().status());
                 healthStatusTracker.remember(last.getKey(), last.getValue().status());
             }
             rememberedLastStatuses = true;
@@ -249,11 +249,11 @@ public class StatusMonitoringService {
     }
 
     private void saveLogEntry(ServiceEntity service, String currentStatus, String msg, int latency) {
-        liveStatuses.put(service.name(), currentStatus);
-        liveLatencies.put(service.name(), latency);
-        lastChecked.put(service.name(), Instant.now());
+        liveStatuses.put(service.id(), currentStatus);
+        liveLatencies.put(service.id(), latency);
+        lastChecked.put(service.id(), Instant.now());
         
-        String lastKnownStatus = previousStatuses.get(service.name());
+        String lastKnownStatus = previousStatuses.get(service.id());
 
         if (lastKnownStatus == null || !lastKnownStatus.equalsIgnoreCase(currentStatus)) {
             log.atInfo().log(String.format("STATE CHANGE DETECTED -> Service '%s' shifted to [%s]", service.name(), currentStatus));
@@ -279,7 +279,7 @@ public class StatusMonitoringService {
 
             try {
                 statusLogRepository.begin();           
-                statusLogRepository.create(logRecord);  
+                statusLogRepository.create(logRecord, service.id());
                 statusLogRepository.commit();          
             } catch (Exception e) {
                 try { statusLogRepository.rollback(); } catch (Exception rbEx) { log.atError().log("UnitOfWork Rollback failed: " + rbEx.getMessage()); }
@@ -290,7 +290,7 @@ public class StatusMonitoringService {
 
             // The change is committed and the database connection is released before delivery.
             // Keep the new baseline even if notification delivery fails.
-            previousStatuses.put(service.name(), currentStatus);
+            previousStatuses.put(service.id(), currentStatus);
             try {
                 statusChangeNotifications.notifyStatusChange(
                         service.name(), lastKnownStatus, currentStatus, sanitizedMessage);
@@ -301,7 +301,7 @@ public class StatusMonitoringService {
         }
     }
 
-    public Map<String, String> getLiveStatuses() { return liveStatuses; }
-    public Map<String, Integer> getLiveLatencies() { return liveLatencies; }
-    public Map<String, Instant> getLastChecked() { return lastChecked; }
+    public Map<Long, String> getLiveStatuses() { return liveStatuses; }
+    public Map<Long, Integer> getLiveLatencies() { return liveLatencies; }
+    public Map<Long, Instant> getLastChecked() { return lastChecked; }
 }

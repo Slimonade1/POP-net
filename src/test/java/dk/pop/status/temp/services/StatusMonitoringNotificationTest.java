@@ -27,14 +27,14 @@ class StatusMonitoringNotificationTest {
     @Mock private ResponseTimeRepository responseTimes;
     private final ServiceEntity printer = new ServiceEntity(1L, "Printing", "https://example.test", 3);
     private StatusMonitoringService monitor;
-    private Map<String, String> previous;
+    private Map<Long, String> previous;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
     void setUp() {
         monitor = new StatusMonitoringService(services, logs, new HealthStatusTracker(), notifications, responseTimes);
-        previous = (Map<String, String>) ReflectionTestUtils.getField(monitor, "previousStatuses");
-        previous.put(printer.name(), "healthy");
+        previous = (Map<Long, String>) ReflectionTestUtils.getField(monitor, "previousStatuses");
+        previous.put(printer.id(), "healthy");
     }
 
     @Test
@@ -43,11 +43,11 @@ class StatusMonitoringNotificationTest {
 
         var order = inOrder(logs, notifications);
         order.verify(logs).begin();
-        order.verify(logs).create(any(StatusLog.class));
+        order.verify(logs).create(any(StatusLog.class), eq(printer.id()));
         order.verify(logs).commit();
         order.verify(logs).close();
         order.verify(notifications).notifyStatusChange("Printing", "healthy", "down", "Check result");
-        assertThat(previous.get("Printing")).isEqualTo("down");
+        assertThat(previous.get(printer.id())).isEqualTo("down");
     }
 
     @Test
@@ -59,7 +59,7 @@ class StatusMonitoringNotificationTest {
         verify(logs).rollback();
         verify(logs).close();
         verifyNoInteractions(notifications);
-        assertThat(previous.get("Printing")).isEqualTo("healthy");
+        assertThat(previous.get(printer.id())).isEqualTo("healthy");
     }
 
     @Test
@@ -71,9 +71,9 @@ class StatusMonitoringNotificationTest {
         record("down");
 
         verify(notifications).notifyStatusChange("Printing", "healthy", "down", "Check result");
-        verify(logs).create(any(StatusLog.class));
+        verify(logs).create(any(StatusLog.class), eq(printer.id()));
         verify(logs, never()).rollback();
-        assertThat(previous.get("Printing")).isEqualTo("down");
+        assertThat(previous.get(printer.id())).isEqualTo("down");
     }
 
     private void record(String status) {

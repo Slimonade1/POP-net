@@ -126,6 +126,32 @@ public class StatusLogRepository implements UnitOfWork {
         }
     }
 
+    public List<StatusLog> findLastBeforeByServiceId(long serviceId, LocalDate date) {
+        var sql = """
+                SELECT l.*, l.%s AS diagnostic_status, %s AS diagnostic_duration, s.name AS service_name
+                FROM status_logs l
+                JOIN services s ON s.id = l.service_id
+                WHERE l.service_id = ? AND l.date < ?
+                ORDER BY l.date DESC, l.time DESC, l.id DESC
+                LIMIT 1
+                """;
+
+        try (var connection = dataSource.getConnection();
+             var statement = connection.prepareStatement(sql.formatted(columns(connection).status(), columns(connection).durationRead()))) {
+            statement.setLong(1, serviceId);
+            statement.setDate(2, java.sql.Date.valueOf(date));
+            try (var results = statement.executeQuery()) {
+                List<StatusLog> logs = new ArrayList<>();
+                if (results.next()) {
+                    logs.add(readLog(results));
+                }
+                return logs;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to read status history", e);
+        }
+    }
+
     public List<StatusLog> findSince(LocalDate from) {
         var sql = """
                 SELECT l.*, l.%s AS diagnostic_status, %s AS diagnostic_duration, s.name AS service_name
@@ -150,6 +176,31 @@ public class StatusLogRepository implements UnitOfWork {
         }
     }
 
+    public List<StatusLog> findSinceByServiceId(long serviceId, LocalDate from) {
+        var sql = """
+                SELECT l.*, l.%s AS diagnostic_status, %s AS diagnostic_duration, s.name AS service_name
+                FROM status_logs l
+                JOIN services s ON s.id = l.service_id
+                WHERE l.service_id = ? AND l.date >= ?
+                ORDER BY l.date, l.time, l.id
+                """;
+
+        try (var connection = dataSource.getConnection();
+             var statement = connection.prepareStatement(sql.formatted(columns(connection).status(), columns(connection).durationRead()))) {
+            statement.setLong(1, serviceId);
+            statement.setDate(2, java.sql.Date.valueOf(from));
+            try (var results = statement.executeQuery()) {
+                List<StatusLog> logs = new ArrayList<>();
+                while (results.next()) {
+                    logs.add(readLog(results));
+                }
+                return logs;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to read status history", e);
+        }
+    }
+
     private static StatusLog readLog(ResultSet results) throws SQLException {
         return new StatusLog(
                 results.getLong("id"),
@@ -162,35 +213,27 @@ public class StatusLogRepository implements UnitOfWork {
     }
 
     public void create(StatusLog statusLog) {
-        var findServiceId = "SELECT id FROM services WHERE name = ?";
-        
+        throw new UnsupportedOperationException("Status logs require an explicit service id");
+    }
+
+    public void create(StatusLog statusLog, long serviceId) {
         var stmt = """
         INSERT INTO status_logs
             (service_id, %s, time, date, message, %s)
         VALUES (?, ?, ?, ?, ?, ?)
         """;
 
-        try (var findStatement = getConnection().prepareStatement(findServiceId)) {
-            findStatement.setString(1, statusLog.service_name());
+        try {
+            var columns = columns(getConnection());
+            try (var insertStatement = getConnection().prepareStatement(stmt.formatted(columns.status(), columns.duration()))) {
+                insertStatement.setLong(1, serviceId);
+                insertStatement.setString(2, statusLog.status());
+                insertStatement.setTime(3, java.sql.Time.valueOf(statusLog.time()));
+                insertStatement.setDate(4, java.sql.Date.valueOf(statusLog.date()));
+                insertStatement.setString(5, statusLog.message());
+                insertStatement.setInt(6, statusLog.delay_ms());
 
-            try (var resultSet = findStatement.executeQuery()) {
-                if (!resultSet.next()) {
-                    throw new RuntimeException("Service not found: " + statusLog.service_name());
-                }
-
-                long serviceId = resultSet.getLong("id");
-
-                var columns = columns(getConnection());
-                try (var insertStatement = getConnection().prepareStatement(stmt.formatted(columns.status(), columns.duration()))) {
-                    insertStatement.setLong(1, serviceId);
-                    insertStatement.setString(2, statusLog.status());
-                    insertStatement.setTime(3, java.sql.Time.valueOf(statusLog.time()));
-                    insertStatement.setDate(4, java.sql.Date.valueOf(statusLog.date()));
-                    insertStatement.setString(5, statusLog.message());
-                    insertStatement.setInt(6, statusLog.delay_ms());
-
-                    insertStatement.executeUpdate();
-                }
+                insertStatement.executeUpdate();
             }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to create status log", e);
