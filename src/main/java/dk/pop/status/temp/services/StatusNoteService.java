@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Service
-public class StatusNoteService {
+public class  StatusNoteService {
     private final StatusNoteRepository notes;
     private final ServiceEntityRepository services;
 
