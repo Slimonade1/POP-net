@@ -631,13 +631,14 @@ a {
         linear-gradient(var(--divider), var(--divider)) 0 100% / 100% 1px no-repeat;
 }
 
-.chart__line {
-    fill: none;
-    stroke: var(--ink);
-    stroke-width: 2px;
-    stroke-linejoin: round;
-    stroke-linecap: round;
+.chart__bar {
+    fill: var(--ink);
     vector-effect: non-scaling-stroke;
+}
+
+.chart__empty {
+    fill: var(--quiet);
+    font-size: 14px;
 }
 
 .chart__band {
