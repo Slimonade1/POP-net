@@ -92,7 +92,7 @@ class StatusLogRepositoryTest {
 
         try {
             repository.begin();
-            repository.create(log);
+            repository.create(log, 3L);
             repository.commit();
         } finally {
             repository.close();

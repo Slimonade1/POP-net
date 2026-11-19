@@ -43,14 +43,6 @@ public class LiveData implements StatusSource {
     @Override
     public List<ServiceGroup> groups(ZonedDateTime now) {
         LocalDate from = now.toLocalDate().minusDays(15);
-        Map<String, List<StatusLog>> history = new LinkedHashMap<>();
-        for (StatusLog log : logs.findLastBefore(from)) {
-            history.computeIfAbsent(log.service_name(), name -> new ArrayList<>()).add(log);
-        }
-        for (StatusLog log : logs.findSince(from)) {
-            history.computeIfAbsent(log.service_name(), name -> new ArrayList<>()).add(log);
-        }
-
         Map<String, List<ServiceView>> groups = new LinkedHashMap<>();
         groups.put(NETWORK, new ArrayList<>());
         groups.put(WEB, new ArrayList<>());
@@ -60,8 +52,11 @@ public class LiveData implements StatusSource {
                 .filter(service -> slugs.containsKey(service.id()))
                 .sorted(Comparator.comparing(ServiceEntity::id))
                 .forEach(service -> {
+                    List<StatusLog> history = new ArrayList<>();
+                    history.addAll(logs.findLastBeforeByServiceId(service.id(), from));
+                    history.addAll(logs.findSinceByServiceId(service.id(), from));
                     groups.get(service.isWeb() ? WEB : NETWORK)
-                            .add(view(service, slugs.get(service.id()), history.getOrDefault(service.name(), List.of())));
+                            .add(view(service, slugs.get(service.id()), history));
                 });
 
         return groups.entrySet().stream()
@@ -100,9 +95,9 @@ public class LiveData implements StatusSource {
     }
 
     private ServiceView view(ServiceEntity service, String slug, List<StatusLog> history) {
-        Instant checked = monitoring.getLastChecked().get(service.name());
+        Instant checked = monitoring.getLastChecked().get(service.id());
         return new ServiceView(service.id(), service.name(), slug, service.isWeb(),
-                monitoring.getLiveLatencies().get(service.name()), incidents(history),
+                monitoring.getLiveLatencies().get(service.id()), incidents(history),
                 checked == null ? null : checked.atZone(StatusPages.ZONE));
     }
 
