@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -34,8 +33,6 @@ import java.util.concurrent.TimeUnit;
 public class StatusMonitoringService {
 
     private static final Logger log = Log.getLogger(StatusMonitoringService.class);
-    private static final java.util.regex.Pattern PING_LATENCY =
-            java.util.regex.Pattern.compile("(?i)time\\s*([<=>])\\s*([0-9]+(?:[.,][0-9]+)?)\\s*ms");
 
     private final ServiceEntityRepository serviceRepository;
     private final StatusLogRepository statusLogRepository;
@@ -43,10 +40,10 @@ public class StatusMonitoringService {
     private final StatusChangeNotificationService statusChangeNotifications;
     private final ResponseTimeRepository responseTimes;
     
-    private final Map<String, String> liveStatuses = new ConcurrentHashMap<>();
-    private final Map<String, Integer> liveLatencies = new ConcurrentHashMap<>();
-    private final Map<String, String> previousStatuses = new ConcurrentHashMap<>();
-    private final Map<String, Instant> lastChecked = new ConcurrentHashMap<>();
+    private final Map<Long, String> liveStatuses = new ConcurrentHashMap<>();
+    private final Map<Long, Integer> liveLatencies = new ConcurrentHashMap<>();
+    private final Map<Long, String> previousStatuses = new ConcurrentHashMap<>();
+    private final Map<Long, Instant> lastChecked = new ConcurrentHashMap<>();
     private boolean rememberedLastStatuses;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -130,7 +127,7 @@ public class StatusMonitoringService {
         }
         saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage, durationMs);
         if (!healthy) {
-            liveLatencies.remove(service.name());
+            liveLatencies.remove(service.id());
         }
     }
 
@@ -140,7 +137,7 @@ public class StatusMonitoringService {
         }
         try {
             for (Map.Entry<Long, StatusLog> last : statusLogRepository.findLatestByService().entrySet()) {
-                previousStatuses.put(last.getValue().service_name(), last.getValue().status());
+                previousStatuses.put(last.getKey(), last.getValue().status());
                 healthStatusTracker.remember(last.getKey(), last.getValue().status());
             }
             rememberedLastStatuses = true;
@@ -172,7 +169,6 @@ public class StatusMonitoringService {
 
         boolean healthy;
         String diagnosticMessage;
-        Integer pingLatencyMs = null;
 
         try {
             String os = System.getProperty("os.name").toLowerCase();
@@ -190,24 +186,16 @@ public class StatusMonitoringService {
                 pb = new ProcessBuilder("ping", "-c", "1", "-W", "1", cleanHost);
             }
 
-            Process process = pb.redirectErrorStream(true).start();
+            Process process = pb.start();
             boolean finished = process.waitFor(2, TimeUnit.SECONDS);
             if (!finished) {
                 process.destroyForcibly();
-                process.waitFor();
             }
             int exitCode = finished ? process.exitValue() : -1;
-            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 
             if (exitCode == 0) {
                 healthy = true;
-                pingLatencyMs = parsePingLatency(output);
-                diagnosticMessage = pingLatencyMs == null
-                        ? "ICMP Alive Check Success; latency unavailable"
-                        : "ICMP Alive Check Success";
-                if (pingLatencyMs != null) {
-                    saveResponseTime(service, pingLatencyMs);
-                }
+                diagnosticMessage = "ICMP Alive Check Success";
             } else {
                 healthy = false;
                 diagnosticMessage = "Packet Loss Timeout Drop";
@@ -218,22 +206,7 @@ public class StatusMonitoringService {
         }
 
         int durationMs = (int) ((System.nanoTime() - startTime) / 1_000_000);
-        saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage,
-                pingLatencyMs == null ? durationMs : pingLatencyMs);
-        if (healthy && pingLatencyMs != null) {
-            liveLatencies.put(service.name(), pingLatencyMs);
-        } else {
-            liveLatencies.remove(service.name());
-        }
-    }
-
-    static Integer parsePingLatency(String output) {
-        var matcher = PING_LATENCY.matcher(output);
-        if (!matcher.find()) {
-            return null;
-        }
-        double latency = Double.parseDouble(matcher.group(2).replace(',', '.'));
-        return (int) Math.max(1, Math.round(latency));
+        saveLogEntry(service, healthStatusTracker.recordResult(service, healthy), diagnosticMessage, durationMs);
     }
 
     private void checkScript(ServiceEntity service, String targetPath) {
@@ -276,11 +249,11 @@ public class StatusMonitoringService {
     }
 
     private void saveLogEntry(ServiceEntity service, String currentStatus, String msg, int latency) {
-        liveStatuses.put(service.name(), currentStatus);
-        liveLatencies.put(service.name(), latency);
-        lastChecked.put(service.name(), Instant.now());
+        liveStatuses.put(service.id(), currentStatus);
+        liveLatencies.put(service.id(), latency);
+        lastChecked.put(service.id(), Instant.now());
         
-        String lastKnownStatus = previousStatuses.get(service.name());
+        String lastKnownStatus = previousStatuses.get(service.id());
 
         if (lastKnownStatus == null || !lastKnownStatus.equalsIgnoreCase(currentStatus)) {
             log.atInfo().log(String.format("STATE CHANGE DETECTED -> Service '%s' shifted to [%s]", service.name(), currentStatus));
@@ -306,7 +279,7 @@ public class StatusMonitoringService {
 
             try {
                 statusLogRepository.begin();           
-                statusLogRepository.create(logRecord);  
+                statusLogRepository.create(logRecord, service.id());
                 statusLogRepository.commit();          
             } catch (Exception e) {
                 try { statusLogRepository.rollback(); } catch (Exception rbEx) { log.atError().log("UnitOfWork Rollback failed: " + rbEx.getMessage()); }
@@ -317,7 +290,7 @@ public class StatusMonitoringService {
 
             // The change is committed and the database connection is released before delivery.
             // Keep the new baseline even if notification delivery fails.
-            previousStatuses.put(service.name(), currentStatus);
+            previousStatuses.put(service.id(), currentStatus);
             try {
                 statusChangeNotifications.notifyStatusChange(
                         service.name(), lastKnownStatus, currentStatus, sanitizedMessage);
@@ -328,7 +301,7 @@ public class StatusMonitoringService {
         }
     }
 
-    public Map<String, String> getLiveStatuses() { return liveStatuses; }
-    public Map<String, Integer> getLiveLatencies() { return liveLatencies; }
-    public Map<String, Instant> getLastChecked() { return lastChecked; }
+    public Map<Long, String> getLiveStatuses() { return liveStatuses; }
+    public Map<Long, Integer> getLiveLatencies() { return liveLatencies; }
+    public Map<Long, Instant> getLastChecked() { return lastChecked; }
 }

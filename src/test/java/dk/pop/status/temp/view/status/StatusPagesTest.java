@@ -24,7 +24,7 @@ class StatusPagesTest {
     @Test
     void realServiceNotesUseTheExistingPageEvenWhenExampleModeIsEnabled() {
         var service = new ServiceView(7L, "Management VPN Gateway", "management-vpn-gateway",
-                false, null, List.of(), null, List.of());
+                false, null, List.of(), null);
         when(live.groups(any())).thenReturn(List.of(new ServiceGroup("Network", List.of(service))));
         when(notes.findByServiceId(7L)).thenReturn(Optional.of(new StatusNote(1L, "We are replacing the gateway.", 7L)));
         var model = new ExtendedModelMap();
@@ -39,7 +39,7 @@ class StatusPagesTest {
 
     @Test
     void exampleOnlyPagesStillWorkWithoutShowingUnrelatedDatabaseNotes() {
-        var service = new ServiceView(null, "Demo", "demo", false, null, List.of(), null, List.of());
+        var service = new ServiceView(null, "Demo", "demo", false, null, List.of(), null);
         when(live.groups(any())).thenReturn(List.of());
         when(examples.groups(any())).thenReturn(List.of(new ServiceGroup("Examples", List.of(service))));
         var model = new ExtendedModelMap();
