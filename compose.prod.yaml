@@ -1,8 +1,9 @@
 services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.3.3
-    command: start-dev --import-realm
-    mem_limit: 520m
+    command: start --import-realm
+    restart: unless-stopped
+    mem_limit: 580m
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
@@ -24,8 +25,13 @@ services:
 
   mysql:
     image: mysql:8.4
-    mem_limit: 256m
-    command: --innodb-buffer-pool-size=64M --performance-schema=OFF
+    restart: unless-stopped
+    mem_limit: 512m
+    command: >
+      --innodb-buffer-pool-size=128M
+      --innodb-log-buffer-size=8M
+      --max-connections=40
+      --performance-schema=OFF
     environment:
       MYSQL_DATABASE: popnet
       MYSQL_USER: popnet
@@ -43,15 +49,16 @@ services:
 
   app:
     build: .
-    mem_limit: 320m
+    mem_limit: 384m
     restart: unless-stopped
     extra_hosts:
       - "status.test.pop.dk:host-gateway"
     env_file:
       - .env
     environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx224m -XX:MaxMetaspaceSize=96m"
       DB_URL: jdbc:mysql://mysql:3306/popnet
-      OIDC_ISSUER_URI: https://status.test.pop.dk/auth/realms/popnet
+      OIDC_ISSUER_URI: https://status.test.pop.dk//auth/realms/popnet
       SERVER_PORT: 8082
       SERVER_FORWARD_HEADERS_STRATEGY: framework
     ports:
@@ -61,6 +68,7 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
+
 
 volumes:
   mysql-data:
