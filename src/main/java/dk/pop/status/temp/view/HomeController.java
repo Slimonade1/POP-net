@@ -31,14 +31,24 @@ public class HomeController {
 
     @GetMapping("/")
     public String home(Model model) {
+        populateHome(model);
+        return "home";
+    }
+
+    @GetMapping("/status-fragment")
+    public String statusFragment(Model model) {
+        populateHome(model);
+        return "home :: status-content";
+    }
+
+    private void populateHome(Model model) {
         model.addAttribute("notices", messages.findAll());
         model.addAttribute("serviceUpdates", notes.findPublishedServiceNotes());
-        
+
         model.addAttribute("liveStatuses", monitoringService.getLiveStatuses());
         model.addAttribute("liveLatencies", monitoringService.getLiveLatencies());
-        
+
         pages.home(model);
-        return "home";
     }
 
     @GetMapping("/services/id/{id}")

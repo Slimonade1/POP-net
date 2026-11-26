@@ -5,7 +5,11 @@
 <div class="page">
     <header th:replace="~{fragments/layout :: header}"></header>
 
-    <main>
+    <main id="status-content" th:fragment="status-content" th:attr="data-refresh-url=@{/status-fragment}">
+        <p class="answer__meta" role="status" aria-live="polite">
+            Last updated at <time id="last-updated">just now</time>.
+            <span id="refresh-warning" hidden></span>
+        </p>
         <section class="answer" th:unless="${#lists.isEmpty(groups)}" th:classappend="${'status--' + overall.css()}" aria-live="polite">
             <p class="answer__meta" th:if="${example}">Example status preview: the status and incident history below use demonstration data.</p>
             <h1 class="answer__headline" th:text="${headline}">Everything is working.</h1>
@@ -88,11 +92,11 @@
                 </ol>
             </div>
         </section>
+        <script id="status-data" type="application/json" th:utext="${pageData}"></script>
     </main>
 
     <footer th:replace="~{fragments/layout :: footer}"></footer>
 </div>
-<script id="status-data" type="application/json" th:utext="${pageData}"></script>
 <script th:src="@{/js/status.js}" defer></script>
 </body>
 </html>
