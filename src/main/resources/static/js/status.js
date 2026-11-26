@@ -1,4 +1,10 @@
-(() => {
+const popNetStatusPage = window.popNetStatusPage || (window.popNetStatusPage = {});
+popNetStatusPage.initialize = function initializeStatusPage(preferredRange) {
+    popNetStatusPage.listeners?.abort();
+    popNetStatusPage.listeners = new AbortController();
+    const listeners = popNetStatusPage.listeners;
+    document.querySelector(".tip")?.remove();
+
     const dataElement = document.getElementById("status-data");
     if (!dataElement) {
         return;
@@ -18,7 +24,7 @@
     tip.hidden = true;
     document.body.append(tip);
 
-    let range = "week";
+    let range = preferredRange != null ? preferredRange : "week";    
     let active = null;
     let pointerFocus = false;
 
@@ -264,24 +270,24 @@
         target.addEventListener("pointerdown", (event) => {
             pointerFocus = true;
             show(target, indexAt(target, event.clientX));
-        });
+        }, {signal: listeners.signal});
         target.addEventListener("pointermove", (event) => {
             if (event.pointerType === "mouse" || event.buttons) {
                 show(target, indexAt(target, event.clientX));
             }
-        });
+        }, {signal: listeners.signal});
         target.addEventListener("pointerleave", (event) => {
             if (event.pointerType === "mouse") {
                 hide();
             }
-        });
+        }, {signal: listeners.signal});
         target.addEventListener("focus", () => {
             if (!pointerFocus) {
                 show(target, slices(target) - 1);
             }
             pointerFocus = false;
-        });
-        target.addEventListener("blur", hide);
+        }, {signal: listeners.signal});
+        target.addEventListener("blur", hide, {signal: listeners.signal});
         target.addEventListener("keydown", (event) => {
             const moves = {ArrowLeft: -1, ArrowRight: 1, Home: -Infinity, End: Infinity};
             if (!active || active.target !== target || !(event.key in moves)) {
@@ -289,22 +295,89 @@
             }
             event.preventDefault();
             show(target, Math.min(slices(target) - 1, Math.max(0, active.index + moves[event.key])));
-        });
+        }, {signal: listeners.signal});
     }
 
     for (const button of document.querySelectorAll(".ranges button")) {
-        button.addEventListener("click", () => selectRange(button.dataset.range));
+        button.addEventListener("click", () => selectRange(button.dataset.range), {signal: listeners.signal});
     }
 
     document.addEventListener("pointerdown", (event) => {
         if (active && !active.target.contains(event.target)) {
             hide();
         }
-    });
+    }, {signal: listeners.signal});
     addEventListener("resize", () => {
         hide();
         document.querySelectorAll(".chart__plot[data-values]").forEach(drawChart);
+    }, {signal: listeners.signal});
+
+    selectRange(preferredRange
+        ?? document.querySelector('.ranges button[aria-pressed="true"]')?.dataset.range
+        ?? "week");
+};
+
+(() => {
+    const refreshDelay = 20000;
+    const updatedTimeFormat = new Intl.DateTimeFormat("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZone: "Europe/Copenhagen"
     });
 
-    selectRange(document.querySelector('.ranges button[aria-pressed="true"]')?.dataset.range ?? "week");
+    function setLastUpdated(date) {
+        const time = document.getElementById("last-updated");
+        if (time) {
+            time.dateTime = date.toISOString();
+            time.textContent = updatedTimeFormat.format(date);
+        }
+    }
+
+    async function refreshStatus() {
+        const current = document.getElementById("status-content");
+        if (!current) {
+            return;
+        }
+
+        try {
+            const response = await fetch(current.dataset.refreshUrl, {
+                cache: "no-store",
+                signal: AbortSignal.timeout(10000)
+            });
+            if (!response.ok) {
+                throw new Error(`Status refresh returned HTTP ${response.status}`);
+            }
+
+            const html = await response.text();
+            const replacement = new DOMParser().parseFromString(html, "text/html")
+                .querySelector("#status-content");
+            if (!replacement || !replacement.querySelector("#status-data")) {
+                throw new Error("Status refresh returned an invalid page fragment");
+            }
+
+            const range = current.querySelector('.ranges button[aria-pressed="true"]')?.dataset.range;
+            current.replaceWith(replacement);
+            popNetStatusPage.initialize(range);
+            setLastUpdated(new Date());
+        } catch (error) {
+            console.error("Could not refresh the status page.", error);
+            const warning = document.getElementById("refresh-warning");
+            const time = document.getElementById("last-updated")?.textContent ?? "the last update";
+            if (warning) {
+                warning.hidden = false;
+                warning.textContent = `Could not refresh; showing data from ${time}. Retrying.`;
+            }
+        } finally {
+            if (document.getElementById("status-content")) {
+                window.setTimeout(refreshStatus, refreshDelay);
+            }
+        }
+    }
+
+    popNetStatusPage.initialize();
+    if (document.getElementById("status-content")) {
+        setLastUpdated(new Date());
+        window.setTimeout(refreshStatus, refreshDelay);
+    }
 })();
